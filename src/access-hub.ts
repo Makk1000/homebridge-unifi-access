@@ -23,7 +23,7 @@ export class AccessHub extends AccessDevice {
 
     this.uda = device;
     this._hkLockState = this.hubLockState;
-    this.lockDelayInterval = this.getFeatureNumber("Hub.LockDelayInterval") ?? undefined;
+    this.lockDelayInterval = this.getFeatureNumber(this.featurePrefix + ".LockDelayInterval") ?? undefined;
     this.doorbellRingRequestId = null;
 
     // If we attempt to set the delay interval to something invalid, then assume we are using the default unlock behavior.
@@ -36,13 +36,54 @@ export class AccessHub extends AccessDevice {
     this.configureDevice();
   }
 
+    protected get featurePrefix(): string {
+
+    return "Hub";
+  }
+
+  protected get lockRelayDescription(): string {
+
+    return "door lock relay";
+  }
+
+  protected get positionSensorDisplayName(): string {
+
+    return this.accessoryName + " Door Position Sensor";
+  }
+
+  protected get positionSensorLogLabel(): string {
+
+    return "Door position sensor";
+  }
+
+  protected get doorbellTriggerDisplayName(): string {
+
+    return this.accessoryName + " Doorbell Trigger";
+  }
+
+  protected get lockTriggerDisplayName(): string {
+
+    return this.accessoryName + " Lock Trigger";
+  }
+
+  protected get mqttDoorbellLabel(): string {
+
+    return "Doorbell ring";
+  }
+
+  protected get mqttDpsLabel(): string {
+
+    return "Door position sensor";
+  }
+
   // Configure device-specific settings for this device.
   protected configureHints(): boolean {
 
     // Configure our parent's hints.
     super.configureHints();
 
-    this.hints.hasDps = this.hasCapability([ "dps_alarm", "dps_mode_selectable", "dps_trigger_level" ]) && this.hasFeature("Hub.DPS");
+    this.hints.hasDps = this.hasCapability([ "dps_alarm", "dps_mode_selectable", "dps_trigger_level" ]) &&
+      this.hasFeature(this.featurePrefix + ".DPS");
     this.hints.logDoorbell = this.hasFeature("Log.Doorbell");
     this.hints.logDps = this.hasFeature("Log.DPS");
     this.hints.logLock = this.hasFeature("Log.Lock");
@@ -62,10 +103,10 @@ export class AccessHub extends AccessDevice {
 
     if(this.lockDelayInterval === undefined) {
 
-      this.log.info("The door lock relay will lock five seconds after unlocking in HomeKit.");
+      this.log.info("The %s will lock five seconds after unlocking in HomeKit.", this.lockRelayDescription);
     } else {
 
-      this.log.info("The door lock relay will remain unlocked %s after unlocking in HomeKit.",
+      this.log.info("The %s will remain unlocked %s after unlocking in HomeKit.", this.lockRelayDescription,
         this.lockDelayInterval === 0 ? "indefinitely" : "for " + this.lockDelayInterval.toString() + " minutes");
     }
 
@@ -128,12 +169,12 @@ export class AccessHub extends AccessDevice {
     }
 
     // Acquire the service.
-    const service = acquireService(this.hap, this.accessory, this.hap.Service.ContactSensor, this.accessoryName + " Door Position Sensor",
-      AccessReservedNames.CONTACT_DPS, () => this.log.info("Enabling the door position sensor."));
+    const service = acquireService(this.hap, this.accessory, this.hap.Service.ContactSensor, this.positionSensorDisplayName,
+      AccessReservedNames.CONTACT_DPS, () => this.log.info("Enabling the %s.", this.positionSensorLogLabel.toLowerCase()));
 
     if(!service) {
 
-      this.log.error("Unable to add the door position sensor.");
+      this.log.error("Unable to add the %s.", this.positionSensorLogLabel.toLowerCase());
 
       return false;
     }
@@ -186,14 +227,14 @@ export class AccessHub extends AccessDevice {
   private configureDoorbellTrigger(): boolean {
 
     // Validate whether we should have this service enabled.
-    if(!validService(this.accessory, this.hap.Service.Switch, this.hasCapability("door_bell") && this.hasFeature("Hub.Doorbell.Trigger"),
+    if(!validService(this.accessory, this.hap.Service.Switch, this.hasCapability("door_bell") && this.hasFeature(this.featurePrefix + ".Doorbell.Trigger"),
       AccessReservedNames.SWITCH_DOORBELL_TRIGGER)) {
 
       return false;
     }
 
     // Acquire the service.
-    const service = acquireService(this.hap, this.accessory, this.hap.Service.Switch, this.accessoryName + " Doorbell Trigger",
+    const service = acquireService(this.hap, this.accessory, this.hap.Service.Switch, this.doorbellTriggerDisplayName,
       AccessReservedNames.SWITCH_DOORBELL_TRIGGER, () => this.log.info("Enabling the doorbell automation trigger."));
 
     if(!service) {
@@ -213,7 +254,7 @@ export class AccessHub extends AccessDevice {
     });
 
     // Initialize the switch.
-    service.updateCharacteristic(this.hap.Characteristic.ConfiguredName, this.accessoryName + " Doorbell Trigger");
+    service.updateCharacteristic(this.hap.Characteristic.ConfiguredName, this.doorbellTriggerDisplayName);
     service.updateCharacteristic(this.hap.Characteristic.On, false);
 
     return true;
@@ -223,13 +264,13 @@ export class AccessHub extends AccessDevice {
   private configureLockTrigger(): boolean {
 
     // Validate whether we should have this service enabled.
-    if(!validService(this.accessory, this.hap.Service.Switch, this.hasFeature("Hub.Lock.Trigger"), AccessReservedNames.SWITCH_LOCK_TRIGGER)) {
+    if(!validService(this.accessory, this.hap.Service.Switch, this.hasFeature(this.featurePrefix + ".Lock.Trigger"), AccessReservedNames.SWITCH_LOCK_TRIGGER)) {
 
       return false;
     }
 
     // Acquire the service.
-    const service = acquireService(this.hap, this.accessory, this.hap.Service.Switch, this.accessoryName + " Lock Trigger",
+    const service = acquireService(this.hap, this.accessory, this.hap.Service.Switch, this.lockTriggerDisplayName,
       AccessReservedNames.SWITCH_LOCK_TRIGGER, () => this.log.info("Enabling the lock automation trigger."));
 
     if(!service) {
@@ -254,7 +295,7 @@ export class AccessHub extends AccessDevice {
     });
 
     // Initialize the switch.
-    service.updateCharacteristic(this.hap.Characteristic.ConfiguredName, this.accessoryName + " Lock Trigger");
+    service.updateCharacteristic(this.hap.Characteristic.ConfiguredName, this.lockTriggerDisplayName);
     service.updateCharacteristic(this.hap.Characteristic.On, false);
 
     return true;
@@ -271,13 +312,13 @@ export class AccessHub extends AccessDevice {
     }
 
     // MQTT doorbell status.
-    this.controller.mqtt?.subscribeGet(this.id, "doorbell", "Doorbell ring", () => {
+    this.controller.mqtt?.subscribeGet(this.id, "doorbell", this.mqttDoorbellLabel, () => {
 
       return this.doorbellRingRequestId !== null ? "true" : "false";
     });
 
     // MQTT DPS status.
-    this.controller.mqtt?.subscribeGet(this.id, "dps", "Door position sensor", () => {
+    this.controller.mqtt?.subscribeGet(this.id, "dps", this.mqttDpsLabel, () => {
 
       if(!this.isDpsWired) {
 
@@ -573,8 +614,8 @@ export class AccessHub extends AccessDevice {
 
             if(this.hints.logDps) {
 
-              this.log.info("Door position sensor " + ((this.hkDpsState === this.hap.Characteristic.ContactSensorState.CONTACT_DETECTED) ? "closed." : "open."));
-            }
+              this.log.info("%s %s.", this.positionSensorLogLabel,
+                (this.hkDpsState === this.hap.Characteristic.ContactSensorState.CONTACT_DETECTED) ? "closed" : "open");            }
           }
         }
 
