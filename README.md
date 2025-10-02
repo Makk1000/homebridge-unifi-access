@@ -26,7 +26,7 @@ For the more technically inclined - this plugin has continued to pioneer the Hom
 ### Features
 - ***Easy* configuration - all you need is your UniFi Access controller IP address, username, and password to get started.** The defaults work quite well for the vast majority of users. When you want more, there are [additional options](https://github.com/hjdhjd/homebridge-unifi-access/blob/main/docs/FeatureOptions.md) you can play with, if you choose.
 
-- **Full HomeKit support for the UniFi Access ecosystem.** All generally available UniFi Access hub devices are supported. This includes providing lock accessories, doorbell capabilities, and automation accelerators.
+- **Full HomeKit support for the UniFi Access ecosystem.** All generally available UniFi Access hub devices are supported, including the UniFi Access Gate Hub. This includes providing lock accessories, doorbell capabilities, and automation accelerators.
 
 - **Support for multiple controllers.** This plugin can support multiple UniFi Access controllers. If you have more than one controller, it's easy to add them to this plugin, and integrate them seamlessly into HomeKit.
 
