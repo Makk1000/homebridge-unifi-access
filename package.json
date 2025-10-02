@@ -1,20 +1,20 @@
 {
   "name": "homebridge-unifi-access",
-  "version": "1.9.2",
+  "version": "1.9.3",
   "displayName": "Homebridge UniFi Access",
   "description": "Homebridge UniFi Access plugin providing complete HomeKit integration for the UniFi Access ecosystem with full support for most features including autoconfiguration, motion detection, multiple controllers, and realtime updates.",
   "author": {
-    "name": "HJD",
-    "url": "https://github.com/hjdhjd"
+    "name": "Makk",
+    "url": "https://github.com/makk1000"
   },
-  "homepage": "https://github.com/hjdhjd/homebridge-unifi-access#readme",
+  "homepage": "https://github.com/makk1000/homebridge-unifi-access#readme",
   "license": "ISC",
   "repository": {
     "type": "git",
-    "url": "git://github.com/hjdhjd/homebridge-unifi-access.git"
+    "url": "git://github.com/makk1000/homebridge-unifi-access.git"
   },
   "bugs": {
-    "url": "http://github.com/hjdhjd/homebridge-unifi-access/issues"
+    "url": "http://github.com/makk1000/homebridge-unifi-access/issues"
   },
   "type": "module",
   "engines": {
