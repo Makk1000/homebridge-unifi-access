@@ -50,6 +50,7 @@ Feature options provide a rich mechanism for tailoring your `homebridge-unifi-ac
 
  * [Device](#device): Device feature options.
  * [Controller](#controller): Controller feature options.
+ * [Gate](#gate): Gate feature options.
  * [Hub](#hub): Hub feature options.
  * [Log](#log): Logging feature options.
 
@@ -70,6 +71,18 @@ These option(s) apply to: Access controllers.
 |--------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 | `Controller.DelayDeviceRemoval<I>.Value</I>`     | Delay, in seconds, before removing devices that are no longer detected on the Access controller. By default, devices are added and removed in realtime. **(default: 60)**.
 | `Controller.Publish.Telemetry`                   | Publish all the realtime telemetry received from the Access controller to MQTT. **(default: disabled)**.
+
+#### <A NAME="gate"></A>Gate feature options.
+
+These option(s) apply to: UniFi Access Gate Hub devices.
+
+| Option                                           | Description
+|--------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
+| `Gate.LockDelayInterval<I>.Value</I>`             | Delay, in minutes, before locking the gate lock relay, once it's been unlocked by HomeKit. If set to 0, it will remain unlocked indefinitely. By default, the gate lock relay will lock five seconds after unlocking. **(default: 0)**.
+| `Gate.Lock.Trigger`                               | Add a switch accessory to control the gate lock. This can be useful in automation scenarios where you want to work around HomeKit's security restrictions for controlling locks and triggering events when a lock or unlock event occurs. **(default: disabled)**.
+| `Gate.Doorbell`                                   | Add a doorbell accessory to handle gate call button events in HomeKit. **(default: enabled)**. <BR>*Supported on UniFi Access Gate Hubs that provide a call button.*
+| `Gate.Doorbell.Trigger`                           | Add a switch accessory for automation scenarios to reflect (but not trigger) gate call button events. **(default: disabled)**. <BR>*Supported on UniFi Access Gate Hubs that provide a call button.*
+| `Gate.DPS`                                        | Add a contact sensor accessory for the gate position sensor. **(default: enabled)**. <BR>*Supported on UniFi Access Gate Hubs that have a position sensor.*
 
 #### <A NAME="hub"></A>Hub feature options.
 
