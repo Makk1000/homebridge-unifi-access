@@ -78,19 +78,21 @@ class PluginUiServer extends HomebridgePluginUiServer {
           return [];
         }
 
-        const devices = udaApi.devices.filter(x => x.is_managed);
+        const managedDevices = Array.isArray(udaApi.devices) ? udaApi.devices.filter(x => x?.is_managed) : [];
 
-        devices.sort((a, b) => {
+        managedDevices.sort((a, b) => {
 
           const nonEmpty = (...args) => args.find(v => (v !== undefined) && (v !== null) && (v !== ""));
 
-          const aCase = nonEmpty(a.alias, a.name, a.model).toLowerCase();
-          const bCase = nonEmpty(b.alias, b.name, b.model).toLowerCase();
+          const normalize = (value) => (typeof value === "string") ? value.toLowerCase() : "";
+
+          const aCase = normalize(nonEmpty(a?.alias, a?.name, a?.model));
+          const bCase = normalize(nonEmpty(b?.alias, b?.name, b?.model));
 
           return aCase > bCase ? 1 : (bCase > aCase ? -1 : 0);
         });
 
-        return [ udaApi.controller, ...devices ];
+        return [ udaApi.controller, ...managedDevices ];
       } catch(err) {
 
         // eslint-disable-next-line no-console
