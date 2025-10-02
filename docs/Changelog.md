@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file. This project uses [semantic versioning](https://semver.org/).
 
+## 1.9.3 (2025-10-02)
+  * New feature: add support for the UniFi Access Gate Hub, including HomeKit accessories and feature options.
+  * Housekeeping.
+
 ## 1.9.2 (2025-05-27)
   * Housekeeping.
 
