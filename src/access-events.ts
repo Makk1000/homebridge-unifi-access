@@ -60,6 +60,11 @@ export class AccessEvents extends EventEmitter {
 
     switch((packet.data as AccessDeviceConfig).device_type) {
 
+      case "UA-GATE-HUB":
+      case "UA-Gate-Hub":
+      case "UA-Gate":
+      case "UAG":
+      case "UAG-Hub":
       case "UA-Hub-Door-Mini":
       case "UA-ULTRA":
       case "UAH":
