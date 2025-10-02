@@ -9,6 +9,7 @@ import { type HomebridgePluginLogging, MqttClient, type Nullable, retry, sleep, 
 import type { AccessControllerOptions } from "./access-options.js";
 import type { AccessDevice } from "./access-device.js";
 import { AccessEvents } from "./access-events.js";
+import { AccessGate } from "./access-gate.js";
 import { AccessHub } from "./access-hub.js";
 import type { AccessPlatform } from "./access-platform.js";
 import util from "node:util";
@@ -210,7 +211,22 @@ export class AccessController {
       return false;
     }
 
+    this.log.debug("Configuring device type %s (%s) with capabilities: %s.",
+      device.device_type ?? "unknown",
+      this.udaApi.getDeviceName(device),
+      device.capabilities?.length ? device.capabilities.join(", ") : "none");
+
     switch(device.device_type) {
+
+      case "UA-GATE-HUB":
+      case "UA-Gate-Hub":
+      case "UA-Gate":
+      case "UAG":
+      case "UAG-Hub":
+
+        this.configuredDevices[accessory.UUID] = new AccessGate(this, device, accessory);
+
+        return true;
 
       case "UA-Hub-Door-Mini":
       case "UA-ULTRA":
