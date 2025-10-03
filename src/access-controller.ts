@@ -216,23 +216,41 @@ export class AccessController {
       this.udaApi.getDeviceName(device),
       device.capabilities?.length ? device.capabilities.join(", ") : "none");
 
-    switch(device.device_type) {
 
-      case "UA-GATE-HUB":
-      case "UA-Gate-Hub":
-      case "UA-Gate":
+      case "UA-Hub-Door-Mini":
+    const deviceType = device.device_type ?? "";
+      case "UA-ULTRA":
+    const normalizedDeviceType = deviceType.toUpperCase();
+    const normalizedDeviceClass = normalizedDeviceType.replace(/[^A-Z0-9]/g, "");
+    const capabilities = device.capabilities ?? [];
+    const isGate = capabilities.includes("is_gate") || capabilities.includes("is_gate_hub");
+
+    if(isGate) {
+
+      this.configuredDevices[accessory.UUID] = new AccessGate(this, device, accessory);
+
+      return true;
+    }
+
+    switch(normalizedDeviceClass) {
+
+      case "UAGATEHUB":
+      case "UAGATE":
       case "UAG":
-      case "UAG-Hub":
+      case "UAGHUB":
 
         this.configuredDevices[accessory.UUID] = new AccessGate(this, device, accessory);
 
         return true;
 
-      case "UA-Hub-Door-Mini":
-      case "UA-ULTRA":
+      case "UAHUBDOORMINI":
+      case "UAULTRA":
+      case "UAH":
       case "UAH":
       case "UAH-DOOR":
+      case "UAHDOOR":
       case "UAH-Ent":
+      case "UAHENT":
 
         // We have a UniFi Access hub.
         this.configuredDevices[accessory.UUID] = new AccessHub(this, device, accessory);
