@@ -216,10 +216,7 @@ export class AccessController {
       this.udaApi.getDeviceName(device),
       device.capabilities?.length ? device.capabilities.join(", ") : "none");
 
-
-      case "UA-Hub-Door-Mini":
     const deviceType = device.device_type ?? "";
-      case "UA-ULTRA":
     const normalizedDeviceType = deviceType.toUpperCase();
     const normalizedDeviceClass = normalizedDeviceType.replace(/[^A-Z0-9]/g, "");
     const capabilities = device.capabilities ?? [];
