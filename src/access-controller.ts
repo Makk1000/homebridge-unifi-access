@@ -284,8 +284,10 @@ export class AccessController {
     }
 
     // We only support certain device capabilities.
-    if(!device.capabilities.includes("is_hub")) {
+    const capabilities = device.capabilities ?? [];
 
+    if(!capabilities.includes("is_hub") && !capabilities.includes("is_gate") && !capabilities.includes("is_gate_hub")) {
+      
       // If we've already informed the user about this one, we're done.
       if(this.unsupportedDevices[device.mac]) {
 
