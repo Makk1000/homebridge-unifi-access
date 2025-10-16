@@ -1,7 +1,7 @@
 <SPAN ALIGN="CENTER" STYLE="text-align:center">
 <DIV ALIGN="CENTER" STYLE="text-align:center">
 
-[![homebridge-unifi-access: Native HomeKit support for UniFi Access](https://raw.githubusercontent.com/makk1000/homebridge-unifi-access/main/images/homebridge-unifi-access.svg)](https://github.com/hjdhjd/homebridge-unifi-access)
+[![homebridge-unifi-access: Native HomeKit support for UniFi Access](https://raw.githubusercontent.com/makk1000/homebridge-unifi-access/main/images/homebridge-unifi-access.svg)](https://github.com/makk1000/homebridge-unifi-access)
 
 # Homebridge UniFi Access
 
@@ -52,6 +52,7 @@ Feature options provide a rich mechanism for tailoring your `homebridge-unifi-ac
  * [Controller](#controller): Controller feature options.
  * [Gate](#gate): Gate feature options.
  * [Hub](#hub): Hub feature options.
+ * [Intercom](#intercom): Intercom feature options.
  * [Log](#log): Logging feature options.
 
 #### <A NAME="device"></A>Device feature options.
@@ -95,6 +96,15 @@ These option(s) apply to: all Access device types.
 | `Hub.Doorbell`                                   | Add a doorbell accessory to handle doorbell ring events in HomeKit. **(default: enabled)**. <BR>*Supported on UniFi Access hubs that have a doorbell.*
 | `Hub.Doorbell.Trigger`                           | Add a switch accessory for automation scenarios to reflect (but not trigger) doorbell ring events on an Access doorbell. **(default: disabled)**. <BR>*Supported on UniFi Access hubs that have a doorbell.*
 | `Hub.DPS`                                        | Add a contact sensor accessory for the door position sensor. **(default: enabled)**. <BR>*Supported on UniFi Access hubs that have a door position sensor.*
+
+#### <A NAME="intercom"></A>Intercom feature options.
+
+These option(s) apply to: UniFi Access intercom devices.
+
+| Option                                           | Description
+|--------------------------------------------------|----------------------------------------------------------------------------------------------------------|
+| `Intercom.Doorbell`                              | Add a doorbell accessory to handle intercom ring events in HomeKit. **(default: enabled)**. <BR>*Supported on UniFi Access intercom devices that have a call button.*
+| `Intercom.Doorbell.Trigger`                      | Add a switch accessory for automation scenarios to reflect (but not trigger) intercom ring events. **(default: disabled)**. <BR>*Supported on UniFi Access intercom devices that have a call button.*
 
 #### <A NAME="log"></A>Logging feature options.
 
