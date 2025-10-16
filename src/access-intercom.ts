@@ -12,6 +12,7 @@ import { AccessReservedNames } from "./access-types.js";
 export class AccessIntercom extends AccessDevice {
 
   private doorbellRingRequestId: string | null;
+  private readonly deviceClass: string;
   public uda: AccessDeviceConfig;
 
   constructor(controller: AccessController, device: AccessDeviceConfig, accessory: Homebridge.PlatformAccessory) {
@@ -19,6 +20,7 @@ export class AccessIntercom extends AccessDevice {
     super(controller, accessory);
 
     this.uda = device;
+    this.deviceClass = (device.device_type ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
     this.doorbellRingRequestId = null;
 
     this.configureHints();
@@ -54,7 +56,7 @@ export class AccessIntercom extends AccessDevice {
 
   private configureDoorbell(): boolean {
 
-    if(!validService(this.accessory, this.hap.Service.Doorbell, this.hasCapability("door_bell") && this.hasFeature("Intercom.Doorbell"))) {
+    if(!validService(this.accessory, this.hap.Service.Doorbell, this.isDoorbellCapable && this.hasFeature("Intercom.Doorbell"))) {
 
       return false;
     }
@@ -75,7 +77,7 @@ export class AccessIntercom extends AccessDevice {
 
   private configureDoorbellTrigger(): boolean {
 
-    if(!validService(this.accessory, this.hap.Service.Switch, this.hasCapability("door_bell") && this.hasFeature("Intercom.Doorbell.Trigger"),
+    if(!validService(this.accessory, this.hap.Service.Switch, this.isDoorbellCapable && this.hasFeature("Intercom.Doorbell.Trigger"),
       AccessReservedNames.SWITCH_DOORBELL_TRIGGER)) {
 
       return false;
@@ -115,18 +117,13 @@ export class AccessIntercom extends AccessDevice {
     return this.accessoryName + " Doorbell Trigger";
   }
 
-  private hasCapability(capability: string | string[]): boolean {
-
-    return Array.isArray(capability) ? capability.some(c => this.uda?.capabilities?.includes(c)) : this.uda?.capabilities?.includes(capability);
-  }
-
   private eventHandler(packet: AccessEventPacket): void {
 
     switch(packet.event) {
 
       case "access.remote_view":
 
-        if(((packet.data as AccessEventDoorbellRing).connected_uah_id !== this.uda.unique_id) || !this.hasCapability("door_bell")) {
+        if(((packet.data as AccessEventDoorbellRing).connected_uah_id !== this.uda.unique_id) || !this.isDoorbellCapable) {
 
           break;
         }
@@ -173,5 +170,15 @@ export class AccessIntercom extends AccessDevice {
 
         break;
     }
+  }
+
+  private hasCapability(capability: string | string[]): boolean {
+
+    return Array.isArray(capability) ? capability.some(c => this.uda?.capabilities?.includes(c)) : this.uda?.capabilities?.includes(capability);
+  }
+
+  private get isDoorbellCapable(): boolean {
+
+    return this.hasCapability("door_bell") || (this.deviceClass === "UAG3INTERCOM");
   }
 }
