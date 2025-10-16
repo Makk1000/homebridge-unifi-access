@@ -11,6 +11,7 @@ import type { AccessDevice } from "./access-device.js";
 import { AccessEvents } from "./access-events.js";
 import { AccessGate } from "./access-gate.js";
 import { AccessHub } from "./access-hub.js";
+import { AccessIntercom } from "./access-intercom.js";
 import type { AccessPlatform } from "./access-platform.js";
 import util from "node:util";
 
@@ -221,6 +222,7 @@ export class AccessController {
     const normalizedDeviceClass = normalizedDeviceType.replace(/[^A-Z0-9]/g, "");
     const capabilities = device.capabilities ?? [];
     const isGate = capabilities.includes("is_gate") || capabilities.includes("is_gate_hub");
+    const isDoorbell = capabilities.includes("door_bell");
 
     if(isGate) {
 
@@ -243,16 +245,26 @@ export class AccessController {
       case "UAHUBDOORMINI":
       case "UAULTRA":
       case "UAH":
-      case "UAH":
       case "UAH-DOOR":
       case "UAHDOOR":
-      case "UAH-Ent":
+      case "UAH-ENT":
       case "UAHENT":
 
         // We have a UniFi Access hub.
         this.configuredDevices[accessory.UUID] = new AccessHub(this, device, accessory);
 
         return true;
+
+      case "UAG3INTERCOM":
+
+        if(isDoorbell) {
+
+          this.configuredDevices[accessory.UUID] = new AccessIntercom(this, device, accessory);
+
+          return true;
+        }
+
+        break;
 
       default:
 
@@ -286,7 +298,7 @@ export class AccessController {
     // We only support certain device capabilities.
     const capabilities = device.capabilities ?? [];
 
-    if(!capabilities.includes("is_hub") && !capabilities.includes("is_gate") && !capabilities.includes("is_gate_hub")) {
+    if(!capabilities.includes("is_hub") && !capabilities.includes("is_gate") && !capabilities.includes("is_gate_hub") && !capabilities.includes("door_bell")) {
       
       // If we've already informed the user about this one, we're done.
       if(this.unsupportedDevices[device.mac]) {
