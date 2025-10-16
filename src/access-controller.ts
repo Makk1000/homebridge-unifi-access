@@ -344,15 +344,20 @@ export class AccessController {
     accessory.context.controller = this.uda.host.mac;
 
     // Locate our existing Access device instance, if we have one.
-    const accessDevice = this.configuredDevices[accessory.UUID];
+    let accessDevice = this.configuredDevices[accessory.UUID];
 
     // Setup the Access device if it hasn't been configured yet.
     if(!accessDevice) {
 
-      this.addAccessDevice(accessory, device);
+         if(!this.addAccessDevice(accessory, device)) {
+
+        return null;
+      }
+
+      accessDevice = this.configuredDevices[accessory.UUID];
     }
 
-    return accessDevice;
+    return accessDevice ?? null;
   }
 
   // Discover and sync UniFi Access devices between HomeKit and the Access controller.
