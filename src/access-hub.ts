@@ -36,7 +36,7 @@ export class AccessHub extends AccessDevice {
     this.configureDevice();
   }
 
-    protected get featurePrefix(): string {
+  protected get featurePrefix(): string {
 
     return "Hub";
   }
@@ -615,7 +615,8 @@ export class AccessHub extends AccessDevice {
             if(this.hints.logDps) {
 
               this.log.info("%s %s.", this.positionSensorLogLabel,
-                (this.hkDpsState === this.hap.Characteristic.ContactSensorState.CONTACT_DETECTED) ? "closed" : "open");            }
+                (this.hkDpsState === this.hap.Characteristic.ContactSensorState.CONTACT_DETECTED) ? "closed" : "open");
+            }
           }
         }
 
