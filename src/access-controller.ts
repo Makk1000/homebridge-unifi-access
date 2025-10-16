@@ -305,7 +305,7 @@ export class AccessController {
     const isSupportedCapability = capabilityMatchers.some(capability => capabilities.includes(capability));
 
     if(!isSupportedCapability && (normalizedDeviceClass !== "UAG3INTERCOM")) {
-      
+
       // If we've already informed the user about this one, we're done.
       if(this.unsupportedDevices[device.mac]) {
 
@@ -453,9 +453,23 @@ export class AccessController {
       }
 
       // Check to see if the device still exists on the Access controller and the user has not chosen to hide it.
-      if(accessDevice.uda.capabilities.includes("is_hub") &&
-        this.udaApi.devices?.some((x: AccessDeviceConfig) => x.mac.toLowerCase() === accessDevice.uda.mac.toLowerCase()) &&
-        accessDevice.hasFeature("Device")) {
+      const deviceStillExists = this.udaApi.devices?.some((deviceConfig: AccessDeviceConfig) => {
+
+        // Prefer matching by the unique identifier when we have one available, otherwise fall back to a MAC address match.
+        if(accessDevice.uda.unique_id && deviceConfig.unique_id) {
+
+          return deviceConfig.unique_id.toLowerCase() === accessDevice.uda.unique_id.toLowerCase();
+        }
+
+        if(deviceConfig.mac && accessDevice.uda.mac) {
+
+          return deviceConfig.mac.toLowerCase() === accessDevice.uda.mac.toLowerCase();
+        }
+
+        return false;
+      }) ?? false;
+
+      if(deviceStillExists && accessDevice.hasFeature("Device")) {
 
         // In case we have previously queued a device for deletion, let's remove it from the queue since it's reappeared.
         delete this.deviceRemovalQueue[accessDevice.accessory.UUID];
