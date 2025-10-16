@@ -51,7 +51,8 @@
     "prelint": "npm run build-ui",
     "lint": "eslint --max-warnings=${ESLINT_MAX_WARNINGS:-\"-1\"} eslint.config.mjs src homebridge-ui/*.js homebridge-ui/public/**.mjs",
     "postpublish": "npm run clean",
-    "prepublishOnly": "npm run lint && npm run build"
+    "prepublishOnly": "npm run lint && npm run build",
+    "prepare": "npm run build"
   },
   "main": "dist/index.js",
   "dependencies": {
