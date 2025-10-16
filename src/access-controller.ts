@@ -272,7 +272,9 @@ export class AccessController {
 
         return false;
     }
-  }
+
+    return false;
+}
 
   // Discover UniFi Access devices that may have been added to the controller since we last checked.
   private discoverDevices(devices: AccessDeviceConfig[]): boolean {
