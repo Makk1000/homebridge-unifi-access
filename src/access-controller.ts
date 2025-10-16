@@ -222,7 +222,7 @@ export class AccessController {
     const normalizedDeviceClass = normalizedDeviceType.replace(/[^A-Z0-9]/g, "");
     const capabilities = device.capabilities ?? [];
     const isGate = capabilities.includes("is_gate") || capabilities.includes("is_gate_hub");
-    const isDoorbell = capabilities.includes("door_bell");
+    const isDoorbell = capabilities.includes("door_bell") || (normalizedDeviceClass === "UAG3INTERCOM");
 
     if(isGate) {
 
@@ -274,7 +274,7 @@ export class AccessController {
     }
 
     return false;
-}
+  }
 
   // Discover UniFi Access devices that may have been added to the controller since we last checked.
   private discoverDevices(devices: AccessDeviceConfig[]): boolean {
@@ -299,8 +299,12 @@ export class AccessController {
 
     // We only support certain device capabilities.
     const capabilities = device.capabilities ?? [];
+    const normalizedDeviceClass = (device.device_type ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
 
-    if(!capabilities.includes("is_hub") && !capabilities.includes("is_gate") && !capabilities.includes("is_gate_hub") && !capabilities.includes("door_bell")) {
+    const capabilityMatchers = ["is_hub", "is_gate", "is_gate_hub", "door_bell"];
+    const isSupportedCapability = capabilityMatchers.some(capability => capabilities.includes(capability));
+
+    if(!isSupportedCapability && (normalizedDeviceClass !== "UAG3INTERCOM")) {
       
       // If we've already informed the user about this one, we're done.
       if(this.unsupportedDevices[device.mac]) {
@@ -349,7 +353,7 @@ export class AccessController {
     // Setup the Access device if it hasn't been configured yet.
     if(!accessDevice) {
 
-         if(!this.addAccessDevice(accessory, device)) {
+      if(!this.addAccessDevice(accessory, device)) {
 
         return null;
       }
