@@ -49,7 +49,9 @@ export class AccessIntercom extends AccessDevice {
     this.configureMqtt();
 
     this.controller.events.on("access.remote_view", this.listeners["access.remote_view"] = this.eventHandler.bind(this));
+    this.controller.events.on("access.remote_call", this.listeners["access.remote_call"] = this.eventHandler.bind(this));
     this.controller.events.on("access.remote_view.change", this.listeners["access.remote_view.change"] = this.eventHandler.bind(this));
+    this.controller.events.on("access.remote_call.change", this.listeners["access.remote_call.change"] = this.eventHandler.bind(this));
 
     return true;
   }
@@ -122,8 +124,9 @@ export class AccessIntercom extends AccessDevice {
     switch(packet.event) {
 
       case "access.remote_view":
+      case "access.remote_call":
 
-        if(((packet.data as AccessEventDoorbellRing).connected_uah_id !== this.uda.unique_id) || !this.isDoorbellCapable) {
+        if(!this.isDoorbellEventForDevice(packet)) {
 
           break;
         }
@@ -146,6 +149,7 @@ export class AccessIntercom extends AccessDevice {
         break;
 
       case "access.remote_view.change":
+      case "access.remote_call.change":
 
         if(this.doorbellRingRequestId !== (packet.data as AccessEventDoorbellCancel).remote_call_request_id) {
 
@@ -180,5 +184,18 @@ export class AccessIntercom extends AccessDevice {
   private get isDoorbellCapable(): boolean {
 
     return this.hasCapability("door_bell") || (this.deviceClass === "UAG3INTERCOM");
+  }
+
+  private isDoorbellEventForDevice(packet: AccessEventPacket): boolean {
+
+    if(!this.isDoorbellCapable) {
+
+      return false;
+    }
+
+    const ringEvent = packet.data as AccessEventDoorbellRing;
+    const uniqueId = this.uda.unique_id;
+
+    return (ringEvent.connected_uah_id === uniqueId) || (ringEvent.device_id === uniqueId) || (packet.event_object_id === uniqueId);
   }
 }
