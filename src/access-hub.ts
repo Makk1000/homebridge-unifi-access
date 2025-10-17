@@ -130,7 +130,9 @@ export class AccessHub extends AccessDevice {
     // Listen for events.
     this.controller.events.on(this.uda.unique_id, this.listeners[this.uda.unique_id] = this.eventHandler.bind(this));
     this.controller.events.on("access.remote_view", this.listeners["access.remote_view"] = this.eventHandler.bind(this));
+    this.controller.events.on("access.remote_call", this.listeners["access.remote_call"] = this.eventHandler.bind(this));
     this.controller.events.on("access.remote_view.change", this.listeners["access.remote_view.change"] = this.eventHandler.bind(this));
+    this.controller.events.on("access.remote_call.change", this.listeners["access.remote_call.change"] = this.eventHandler.bind(this));
 
     return true;
   }
@@ -567,6 +569,19 @@ export class AccessHub extends AccessDevice {
     return Array.isArray(capability) ? capability.some(c => this.uda?.capabilities?.includes(c)) : this.uda?.capabilities?.includes(capability);
   }
 
+private isDoorbellEventForDevice(packet: AccessEventPacket): boolean {
+
+    if(!this.hasCapability("door_bell")) {
+
+      return false;
+    }
+
+    const ringEvent = packet.data as AccessEventDoorbellRing;
+    const uniqueId = this.uda.unique_id;
+
+    return (ringEvent.connected_uah_id === uniqueId) || (ringEvent.device_id === uniqueId) || (packet.event_object_id === uniqueId);
+  }
+
   // Handle hub-related events.
   private eventHandler(packet: AccessEventPacket): void {
 
@@ -623,9 +638,10 @@ export class AccessHub extends AccessDevice {
         break;
 
       case "access.remote_view":
+      case "access.remote_call":
 
         // Process an Access ring event if we're the intended target.
-        if(((packet.data as AccessEventDoorbellRing).connected_uah_id !== this.uda.unique_id) || !this.hasCapability("door_bell")) {
+        if(!this.isDoorbellEventForDevice(packet)) {
 
           break;
         }
@@ -650,6 +666,7 @@ export class AccessHub extends AccessDevice {
         break;
 
       case "access.remote_view.change":
+      case "access.remote_call.change":
 
         // Process the cancellation of an Access ring event if we're the intended target.
         if(this.doorbellRingRequestId !== (packet.data as AccessEventDoorbellCancel).remote_call_request_id) {
