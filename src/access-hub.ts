@@ -573,8 +573,8 @@ export class AccessHub extends AccessDevice {
 
       case "string":
 
-        isRelayActive = (normalizedRelayValue === "on") || (normalizedRelayValue === "true");
-        isRelayInactive = (normalizedRelayValue === "off") || (normalizedRelayValue === "false");
+        isRelayActive = ["on", "true", "unlocked", "open", "active"].includes(normalizedRelayValue);
+        isRelayInactive = ["off", "false", "locked", "closed", "inactive", "secured"].includes(normalizedRelayValue);
 
         break;
 
