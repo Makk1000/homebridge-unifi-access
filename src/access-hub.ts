@@ -428,12 +428,27 @@ export class AccessHub extends AccessDevice {
     }
 
     // Execute the action.
-    const device: AccessDeviceConfig = (this.isG3Reader && !this.uda.capabilities?.includes("is_hub")) ?
-      { ...this.uda, capabilities: [ ...(this.uda.capabilities ?? []), "is_hub" ] } :
-      this.uda;
+    let device: AccessDeviceConfig = this.uda;
+
+    if(this.isG3Reader) {
+
+      const capabilities = this.uda.capabilities?.includes("is_hub") ? this.uda.capabilities :
+        [ ...(this.uda.capabilities ?? []), "is_hub" ];
+      const locationId = this.uda.location_id ?? this.uda.door?.unique_id;
+
+      if((!this.uda.capabilities?.includes("is_hub")) || (locationId && (locationId !== this.uda.location_id))) {
+
+        device = {
+
+          ...this.uda,
+          ...(locationId ? { ["location_id"]: locationId } : {}),
+          capabilities
+        } as AccessDeviceConfig;
+      }
+    }
 
     if(!(await this.controller.udaApi.unlock(device, unlockDuration))) {
-      
+
       this.log.error("Unable to %s.", action);
 
       return false;
