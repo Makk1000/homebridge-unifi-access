@@ -230,6 +230,13 @@ export class AccessController {
 
     if(isG3DeviceClass) {
 
+      if(isG3Reader) {
+
+        this.configuredDevices[accessory.UUID] = new AccessHub(this, device, accessory);
+
+        return true;
+      }
+
       if(isDoorbell) {
 
         this.configuredDevices[accessory.UUID] = new AccessIntercom(this, device, accessory);
