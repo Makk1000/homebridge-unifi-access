@@ -227,7 +227,7 @@ export class AccessController {
     const isG3Reader = normalizedDeviceClass === "UAG3READER";
     const isG3Doorbell = isG3Intercom || isG3Reader;
     const isDoorbell = capabilities.includes("door_bell") || isG3Doorbell;
-    
+
     if(isG3DeviceClass) {
 
       if(isDoorbell) {
@@ -241,7 +241,7 @@ export class AccessController {
 
       return true;
     }
-    
+
     if(isGate) {
 
       this.configuredDevices[accessory.UUID] = new AccessGate(this, device, accessory);
