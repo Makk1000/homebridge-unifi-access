@@ -222,8 +222,9 @@ export class AccessController {
     const normalizedDeviceClass = normalizedDeviceType.replace(/[^A-Z0-9]/g, "");
     const capabilities = device.capabilities ?? [];
     const isGate = capabilities.includes("is_gate") || capabilities.includes("is_gate_hub");
-    const isDoorbell = capabilities.includes("door_bell") || (normalizedDeviceClass === "UAG3INTERCOM");
-
+    const isDoorbell = capabilities.includes("door_bell") || (normalizedDeviceClass === "UAG3INTERCOM") ||
+      (normalizedDeviceClass === "UAG3");
+    
     if(isGate) {
 
       this.configuredDevices[accessory.UUID] = new AccessGate(this, device, accessory);
@@ -256,7 +257,8 @@ export class AccessController {
         return true;
 
       case "UAG3INTERCOM":
-
+      case "UAG3":
+        
         if(isDoorbell) {
 
           this.configuredDevices[accessory.UUID] = new AccessIntercom(this, device, accessory);
@@ -304,7 +306,7 @@ export class AccessController {
     const capabilityMatchers = ["is_hub", "is_gate", "is_gate_hub", "door_bell"];
     const isSupportedCapability = capabilityMatchers.some(capability => capabilities.includes(capability));
 
-    if(!isSupportedCapability && (normalizedDeviceClass !== "UAG3INTERCOM")) {
+    if(!isSupportedCapability && (normalizedDeviceClass !== "UAG3INTERCOM") && (normalizedDeviceClass !== "UAG3")) {
 
       // If we've already informed the user about this one, we're done.
       if(this.unsupportedDevices[device.mac]) {
