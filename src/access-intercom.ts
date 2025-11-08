@@ -183,7 +183,7 @@ export class AccessIntercom extends AccessDevice {
 
   private get isDoorbellCapable(): boolean {
 
-    return this.hasCapability("door_bell") || (this.deviceClass === "UAG3INTERCOM") || (this.deviceClass === "UAG3");
+    return this.hasCapability("door_bell") || this.deviceClass.startsWith("UAG3");
   }
 
   private isDoorbellEventForDevice(packet: AccessEventPacket): boolean {
