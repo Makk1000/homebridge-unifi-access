@@ -14,6 +14,7 @@ export class AccessHub extends AccessDevice {
   private _hkLockState: CharacteristicValue;
   private doorbellRingRequestId: string | null;
   private lockDelayInterval: number | undefined;
+  private readonly deviceClass: string;
   public uda: AccessDeviceConfig;
 
   // Create an instance.
@@ -22,6 +23,7 @@ export class AccessHub extends AccessDevice {
     super(controller, accessory);
 
     this.uda = device;
+    this.deviceClass = (device.device_type ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
     this._hkLockState = this.hubLockState;
     this.lockDelayInterval = this.getFeatureNumber(this.featurePrefix + ".LockDelayInterval") ?? undefined;
     this.doorbellRingRequestId = null;
@@ -533,9 +535,14 @@ export class AccessHub extends AccessDevice {
     }
 
     const lockRelay = this.uda.configs?.find(x => x.key === relayType);
+    const isG3Reader = this.deviceClass === "UAG3READER";
 
-    return ((lockRelay?.value === "off") ? this.hap.Characteristic.LockCurrentState.SECURED : this.hap.Characteristic.LockCurrentState.UNSECURED) ??
-      this.hap.Characteristic.LockCurrentState.UNKNOWN;
+    if(isG3Reader) {
+
+      return (lockRelay?.value === "on") ? this.hap.Characteristic.LockCurrentState.SECURED : this.hap.Characteristic.LockCurrentState.UNSECURED;
+    }
+
+    return (lockRelay?.value === "off") ? this.hap.Characteristic.LockCurrentState.SECURED : this.hap.Characteristic.LockCurrentState.UNSECURED;
   }
 
   // Return whether the DPS has been wired on the hub.
