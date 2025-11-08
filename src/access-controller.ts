@@ -222,8 +222,20 @@ export class AccessController {
     const normalizedDeviceClass = normalizedDeviceType.replace(/[^A-Z0-9]/g, "");
     const capabilities = device.capabilities ?? [];
     const isGate = capabilities.includes("is_gate") || capabilities.includes("is_gate_hub");
-    const isDoorbell = capabilities.includes("door_bell") || (normalizedDeviceClass === "UAG3INTERCOM") ||
-      (normalizedDeviceClass === "UAG3");
+    const isG3DeviceClass = normalizedDeviceClass.startsWith("UAG3");
+    const isDoorbell = capabilities.includes("door_bell") || isG3DeviceClass;
+
+    if(isG3DeviceClass) {
+
+      if(isDoorbell) {
+
+        this.configuredDevices[accessory.UUID] = new AccessIntercom(this, device, accessory);
+
+        return true;
+      }
+
+      return false;
+    }
     
     if(isGate) {
 
@@ -256,26 +268,12 @@ export class AccessController {
 
         return true;
 
-      case "UAG3INTERCOM":
-      case "UAG3":
-        
-        if(isDoorbell) {
-
-          this.configuredDevices[accessory.UUID] = new AccessIntercom(this, device, accessory);
-
-          return true;
-        }
-
-        break;
-
       default:
 
         this.log.error("Unknown device class %s detected for %s.", device.device_type, device.alias ?? device.display_model);
 
         return false;
     }
-
-    return false;
   }
 
   // Discover UniFi Access devices that may have been added to the controller since we last checked.
@@ -306,7 +304,7 @@ export class AccessController {
     const capabilityMatchers = ["is_hub", "is_gate", "is_gate_hub", "door_bell"];
     const isSupportedCapability = capabilityMatchers.some(capability => capabilities.includes(capability));
 
-    if(!isSupportedCapability && (normalizedDeviceClass !== "UAG3INTERCOM") && (normalizedDeviceClass !== "UAG3")) {
+    if(!isSupportedCapability && !normalizedDeviceClass.startsWith("UAG3")) {
 
       // If we've already informed the user about this one, we're done.
       if(this.unsupportedDevices[device.mac]) {
