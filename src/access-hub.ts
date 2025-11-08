@@ -48,6 +48,11 @@ export class AccessHub extends AccessDevice {
     return "door lock relay";
   }
 
+  private get isG3Reader(): boolean {
+
+    return this.deviceClass === "UAG3READER";
+  }
+
   protected get positionSensorDisplayName(): string {
 
     return this.accessoryName + " Door Position Sensor";
@@ -423,8 +428,12 @@ export class AccessHub extends AccessDevice {
     }
 
     // Execute the action.
-    if(!(await this.controller.udaApi.unlock(this.uda, unlockDuration))) {
+    const device: AccessDeviceConfig = (this.isG3Reader && !this.uda.capabilities?.includes("is_hub")) ?
+      { ...this.uda, capabilities: [ ...(this.uda.capabilities ?? []), "is_hub" ] } :
+      this.uda;
 
+    if(!(await this.controller.udaApi.unlock(device, unlockDuration))) {
+      
       this.log.error("Unable to %s.", action);
 
       return false;
@@ -534,15 +543,71 @@ export class AccessHub extends AccessDevice {
         break;
     }
 
-    const lockRelay = this.uda.configs?.find(x => x.key === relayType);
-    const isG3Reader = this.deviceClass === "UAG3READER";
+    const lockRelayValue = this.uda.configs?.find(x => x.key === relayType)?.value;
 
-    if(isG3Reader) {
+    if(lockRelayValue === undefined || lockRelayValue === null) {
 
-      return (lockRelay?.value === "on") ? this.hap.Characteristic.LockCurrentState.SECURED : this.hap.Characteristic.LockCurrentState.UNSECURED;
+      return this.hap.Characteristic.LockCurrentState.UNKNOWN;
     }
 
-    return (lockRelay?.value === "off") ? this.hap.Characteristic.LockCurrentState.SECURED : this.hap.Characteristic.LockCurrentState.UNSECURED;
+    const normalizedRelayValue = typeof lockRelayValue === "string" ? lockRelayValue.toLowerCase() : lockRelayValue;
+    let isRelayActive = false;
+    let isRelayInactive = false;
+
+    switch(typeof normalizedRelayValue) {
+
+      case "boolean":
+
+        isRelayActive = normalizedRelayValue;
+        isRelayInactive = !normalizedRelayValue;
+
+        break;
+
+      case "number":
+
+        isRelayActive = normalizedRelayValue === 1;
+        isRelayInactive = normalizedRelayValue === 0;
+
+        break;
+
+      case "string":
+
+        isRelayActive = (normalizedRelayValue === "on") || (normalizedRelayValue === "true");
+        isRelayInactive = (normalizedRelayValue === "off") || (normalizedRelayValue === "false");
+
+        break;
+
+      default:
+
+        break;
+    }
+
+    if(this.isG3Reader) {
+
+      if(isRelayActive) {
+
+        return this.hap.Characteristic.LockCurrentState.SECURED;
+      }
+
+      if(isRelayInactive) {
+
+        return this.hap.Characteristic.LockCurrentState.UNSECURED;
+      }
+
+      return this.hap.Characteristic.LockCurrentState.UNKNOWN;
+    }
+
+    if(isRelayInactive) {
+
+      return this.hap.Characteristic.LockCurrentState.SECURED;
+    }
+
+    if(isRelayActive) {
+
+      return this.hap.Characteristic.LockCurrentState.UNSECURED;
+    }
+
+    return this.hap.Characteristic.LockCurrentState.UNKNOWN;
   }
 
   // Return whether the DPS has been wired on the hub.
