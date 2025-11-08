@@ -583,21 +583,6 @@ export class AccessHub extends AccessDevice {
         break;
     }
 
-    if(this.isG3Reader) {
-
-      if(isRelayActive) {
-
-        return this.hap.Characteristic.LockCurrentState.SECURED;
-      }
-
-      if(isRelayInactive) {
-
-        return this.hap.Characteristic.LockCurrentState.UNSECURED;
-      }
-
-      return this.hap.Characteristic.LockCurrentState.UNKNOWN;
-    }
-
     if(isRelayInactive) {
 
       return this.hap.Characteristic.LockCurrentState.SECURED;
