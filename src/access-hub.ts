@@ -569,7 +569,7 @@ export class AccessHub extends AccessDevice {
     return Array.isArray(capability) ? capability.some(c => this.uda?.capabilities?.includes(c)) : this.uda?.capabilities?.includes(capability);
   }
 
-private isDoorbellEventForDevice(packet: AccessEventPacket): boolean {
+  private isDoorbellEventForDevice(packet: AccessEventPacket): boolean {
 
     if(!this.hasCapability("door_bell")) {
 
