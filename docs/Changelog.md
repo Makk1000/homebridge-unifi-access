@@ -2,8 +2,8 @@
 
 All notable changes to this project will be documented in this file. This project uses [semantic versioning](https://semver.org/).
 
-## 1.9.3 (2025-10-16)
-  * New feature: add support for the UniFi Access G3 Intercom, including HomeKit doorbell accessories, MQTT telemetry, and feature options.
+## 1.9.3 (2025-10-16 and 2025-11-08)
+  * New feature: add support for the UniFi Access G3 Intercom and G3 Reader, including HomeKit doorbell accessories, MQTT telemetry, and feature options.
   * Housekeeping.
   * New feature: add support for the UniFi Access Gate Hub, including HomeKit accessories and feature options.
   * Housekeeping.
