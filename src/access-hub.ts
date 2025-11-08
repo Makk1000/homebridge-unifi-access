@@ -547,7 +547,8 @@ export class AccessHub extends AccessDevice {
 
     if(lockRelayValue === undefined || lockRelayValue === null) {
 
-      return this.hap.Characteristic.LockCurrentState.UNKNOWN;
+      return this.isG3Reader ? this.hap.Characteristic.LockCurrentState.SECURED :
+        this.hap.Characteristic.LockCurrentState.UNKNOWN;
     }
 
     const normalizedRelayValue = typeof lockRelayValue === "string" ? lockRelayValue.toLowerCase() : lockRelayValue;
