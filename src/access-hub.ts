@@ -50,7 +50,7 @@ export class AccessHub extends AccessDevice {
 
   private get isG3Reader(): boolean {
 
-    return this.deviceClass === "UAG3READER";
+    return this.deviceClass.startsWith("UAG3READER");
   }
 
   protected get positionSensorDisplayName(): string {
@@ -591,6 +591,11 @@ export class AccessHub extends AccessDevice {
     if(isRelayActive) {
 
       return this.hap.Characteristic.LockCurrentState.UNSECURED;
+    }
+
+    if(this.isG3Reader) {
+
+      return this.hap.Characteristic.LockCurrentState.SECURED;
     }
 
     return this.hap.Characteristic.LockCurrentState.UNKNOWN;
