@@ -224,7 +224,9 @@ export class AccessController {
     const isGate = capabilities.includes("is_gate") || capabilities.includes("is_gate_hub");
     const isG3DeviceClass = normalizedDeviceClass.startsWith("UAG3");
     const isG3Intercom = normalizedDeviceClass === "UAG3INTERCOM";
-    const isDoorbell = capabilities.includes("door_bell") || isG3Intercom;
+    const isG3Reader = normalizedDeviceClass === "UAG3READER";
+    const isG3Doorbell = isG3Intercom || isG3Reader;
+    const isDoorbell = capabilities.includes("door_bell") || isG3Doorbell;
     
     if(isG3DeviceClass) {
 
