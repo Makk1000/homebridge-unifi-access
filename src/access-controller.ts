@@ -223,8 +223,9 @@ export class AccessController {
     const capabilities = device.capabilities ?? [];
     const isGate = capabilities.includes("is_gate") || capabilities.includes("is_gate_hub");
     const isG3DeviceClass = normalizedDeviceClass.startsWith("UAG3");
-    const isDoorbell = capabilities.includes("door_bell") || isG3DeviceClass;
-
+    const isG3Intercom = normalizedDeviceClass === "UAG3INTERCOM";
+    const isDoorbell = capabilities.includes("door_bell") || isG3Intercom;
+    
     if(isG3DeviceClass) {
 
       if(isDoorbell) {
@@ -234,7 +235,9 @@ export class AccessController {
         return true;
       }
 
-      return false;
+      this.configuredDevices[accessory.UUID] = new AccessHub(this, device, accessory);
+
+      return true;
     }
     
     if(isGate) {
