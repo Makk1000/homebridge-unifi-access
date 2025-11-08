@@ -396,12 +396,20 @@ export class AccessHub extends AccessDevice {
 
     const action = isLocking ? "lock" : "unlock";
 
-    // Only allow relocking if we are able to do so.
-    if((this.lockDelayInterval === undefined) && isLocking) {
+    let unlockDuration: number | undefined;
 
-      this.log.error("Unable to manually relock when the lock relay is configured to the default settings.");
+    if(isLocking) {
 
-      return false;
+      unlockDuration = 0;
+    } else if(this.lockDelayInterval === undefined) {
+
+      unlockDuration = undefined;
+    } else if(this.lockDelayInterval === 0) {
+
+      unlockDuration = Infinity;
+    } else {
+
+      unlockDuration = this.lockDelayInterval;
     }
 
     // If we're not online, we're done.
@@ -413,7 +421,7 @@ export class AccessHub extends AccessDevice {
     }
 
     // Execute the action.
-    if(!(await this.controller.udaApi.unlock(this.uda, (this.lockDelayInterval === undefined) ? undefined : (isLocking ? 0 : Infinity)))) {
+    if(!(await this.controller.udaApi.unlock(this.uda, unlockDuration))) {
 
       this.log.error("Unable to %s.", action);
 
