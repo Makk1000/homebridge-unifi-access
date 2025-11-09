@@ -442,26 +442,16 @@ export class AccessHub extends AccessDevice {
     }
 
     // Execute the action.
-    let device: AccessDeviceConfig = this.uda;
+    const device = this.getCommandDeviceConfig();
 
-    if(this.isG3Reader) {
+    if(!device) {
 
-      const capabilities = this.uda.capabilities?.includes("is_hub") ? this.uda.capabilities :
-        [ ...(this.uda.capabilities ?? []), "is_hub" ];
-      const locationId = this.uda.location_id ?? this.uda.door?.unique_id;
+      this.log.error("Unable to %s. Command device configuration is not available.", action);
 
-      if((!this.uda.capabilities?.includes("is_hub")) || (locationId && (locationId !== this.uda.location_id))) {
-
-        device = {
-
-          ...this.uda,
-          ...(locationId ? { ["location_id"]: locationId } : {}),
-          capabilities
-        } as AccessDeviceConfig;
-      }
+      return false;
     }
 
-       if(isLocking && this.lockResetTimer) {
+    if(isLocking && this.lockResetTimer) {
 
       clearTimeout(this.lockResetTimer);
       this.lockResetTimer = null;
@@ -485,7 +475,44 @@ export class AccessHub extends AccessDevice {
     return true;
   }
 
-    private scheduleDefaultLockReset(device: AccessDeviceConfig): void {
+  private getCommandDeviceConfig(): AccessDeviceConfig | null {
+
+    if(this.uda.capabilities?.includes("is_hub")) {
+
+      return this.uda;
+    }
+
+    if(!this.isG3Reader) {
+
+      return null;
+    }
+
+    const capabilities = [ ...(this.uda.capabilities ?? []), "is_hub" ];
+    const locationId = this.uda.location_id ?? this.uda.door?.unique_id;
+
+    if(!locationId && !this.uda.location_id) {
+
+      this.log.error("Unable to determine the lock location for the %s.", this.lockRelayDescription);
+
+      return null;
+    }
+
+    const deviceConfig = {
+
+      ...this.uda,
+      capabilities
+    } as AccessDeviceConfig;
+
+    if(locationId && (locationId !== this.uda.location_id)) {
+
+      // eslint-disable-next-line camelcase
+      deviceConfig.location_id = locationId;
+    }
+
+    return deviceConfig;
+  }
+
+  private scheduleDefaultLockReset(device: AccessDeviceConfig): void {
 
     if(this.lockResetTimer) {
 
@@ -747,6 +774,16 @@ export class AccessHub extends AccessDevice {
         // Process an Access unlock event.
         this.hkLockState = this.hap.Characteristic.LockCurrentState.UNSECURED;
 
+        if(this.lockDelayInterval === undefined) {
+
+          const device = this.getCommandDeviceConfig();
+
+          if(device) {
+
+            this.scheduleDefaultLockReset(device);
+          }
+        }
+
         // Publish to MQTT, if configured to do so.
         this.controller.mqtt?.publish(this.id, "lock", "false");
 
@@ -763,6 +800,12 @@ export class AccessHub extends AccessDevice {
         if(this.hubLockState !== this.hkLockState) {
 
           this.hkLockState = this.hubLockState;
+
+          if((this.hkLockState === this.hap.Characteristic.LockCurrentState.SECURED) && this.lockResetTimer) {
+
+            clearTimeout(this.lockResetTimer);
+            this.lockResetTimer = null;
+          }
 
           this.controller.mqtt?.publish(this.id, "lock", this.hkLockState === this.hap.Characteristic.LockCurrentState.SECURED ? "true" : "false");
 
