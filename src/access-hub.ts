@@ -15,6 +15,7 @@ export class AccessHub extends AccessDevice {
   private _hkLockState: CharacteristicValue;
   private doorbellRingRequestId: string | null;
   private lockDelayInterval: number | undefined;
+  private lockResetTimer: NodeJS.Timeout | null;
   private readonly deviceClass: string;
   public uda: AccessDeviceConfig;
 
@@ -27,6 +28,7 @@ export class AccessHub extends AccessDevice {
     this.deviceClass = (device.device_type ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
     this._hkLockState = this.hubLockState;
     this.lockDelayInterval = this.getFeatureNumber(this.featurePrefix + ".LockDelayInterval") ?? undefined;
+    this.lockResetTimer = null;
     this.doorbellRingRequestId = null;
 
     // If we attempt to set the delay interval to something invalid, then assume we are using the default unlock behavior.
@@ -143,6 +145,17 @@ export class AccessHub extends AccessDevice {
     this.controller.events.on("access.remote_call.change", this.listeners["access.remote_call.change"] = this.eventHandler.bind(this));
 
     return true;
+  }
+
+  public override cleanup(): void {
+
+    if(this.lockResetTimer) {
+
+      clearTimeout(this.lockResetTimer);
+      this.lockResetTimer = null;
+    }
+
+    super.cleanup();
   }
 
   // Configure the doorbell service for HomeKit.
@@ -448,17 +461,72 @@ export class AccessHub extends AccessDevice {
       }
     }
 
-    if(!(await this.controller.udaApi.unlock(device, unlockDuration))) {
+       if(isLocking && this.lockResetTimer) {
+
+      clearTimeout(this.lockResetTimer);
+      this.lockResetTimer = null;
+    }
+
+    const isDefaultUnlock = !isLocking && (this.lockDelayInterval === undefined);
+    const commandSucceeded = await this.controller.udaApi.unlock(device, unlockDuration);
+
+    if(!commandSucceeded) {
 
       this.log.error("Unable to %s.", action);
 
       return false;
     }
 
+    if(isDefaultUnlock) {
+
+      this.scheduleDefaultLockReset(device);
+    }
+
     return true;
   }
 
-  // Return the current HomeKit DPS state that we are tracking for this hub.
+    private scheduleDefaultLockReset(device: AccessDeviceConfig): void {
+
+    if(this.lockResetTimer) {
+
+      clearTimeout(this.lockResetTimer);
+      this.lockResetTimer = null;
+    }
+
+    this.lockResetTimer = setTimeout(() => {
+
+      this.lockResetTimer = null;
+      void this.resetLockToDefaultState(device);
+    }, 5000);
+  }
+
+  private async resetLockToDefaultState(device: AccessDeviceConfig): Promise<void> {
+
+    try {
+
+      if(!this.isOnline) {
+
+        return;
+      }
+
+      if(!(await this.controller.udaApi.unlock(device, 0))) {
+
+        this.log.error("Unable to reset the %s to a locked state after unlocking.", this.lockRelayDescription);
+
+        return;
+      }
+
+      if(this.hkLockState !== this.hap.Characteristic.LockCurrentState.SECURED) {
+
+        this.hkLockState = this.hap.Characteristic.LockCurrentState.SECURED;
+      }
+    } catch(error) {
+
+      this.log.error("Unable to reset the %s to a locked state after unlocking: %s.", this.lockRelayDescription, error);
+    }
+  }
+
+// Return the current HomeKit DPS state that we are tracking for this hub.
   private get hkDpsState(): CharacteristicValue {
 
     return this.accessory.getService(this.hap.Service.ContactSensor)?.getCharacteristic(this.hap.Characteristic.ContactSensorState).value ??
