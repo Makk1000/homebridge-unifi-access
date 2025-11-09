@@ -917,14 +917,23 @@ export class AccessHub extends AccessDevice {
       return false;
     }
 
-    const locationId = this.uda.location_id ?? this.uda.door?.unique_id;
+    switch(packet.event.toLowerCase()) {
 
-    if(!locationId || (packet.event_object_id !== locationId)) {
+      case "access.data.device.access_granted":
 
-      return false;
+        return packet.event_object_id === this.uda.unique_id;
+
+      case "access.data.location.access_granted":
+
+        // If we have a location identifier, validate that it matches the event object identifier. Otherwise, fall back to the
+        // associated door identifier for the reader and validate that instead.
+        return ((this.uda.location_id && (packet.event_object_id === this.uda.location_id)) ||
+          (!!this.uda.door?.unique_id && (packet.event_object_id === this.uda.door.unique_id)));
+
+      default:
+
+        return false;
     }
-
-    return packet.event.toLowerCase() === "access.data.location.access_granted";
   }
 
   private handleUnlockEvent(): void {
@@ -964,8 +973,8 @@ export class AccessHub extends AccessDevice {
 
         this.handleUnlockEvent();
 
-           break;
-        
+        break;
+      case "access.data.device.access_granted":
       case "access.data.location.access_granted":
 
         if(!this.isG3ReaderAccessGrantEvent(packet)) {
