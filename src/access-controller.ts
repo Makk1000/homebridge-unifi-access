@@ -13,6 +13,7 @@ import { AccessGate } from "./access-gate.js";
 import { AccessHub } from "./access-hub.js";
 import { AccessIntercom } from "./access-intercom.js";
 import type { AccessPlatform } from "./access-platform.js";
+import { isG3ReaderDeviceClass } from "./access-types.js";
 import util from "node:util";
 
 export class AccessController {
@@ -224,7 +225,7 @@ export class AccessController {
     const isGate = capabilities.includes("is_gate") || capabilities.includes("is_gate_hub");
     const isG3DeviceClass = normalizedDeviceClass.startsWith("UAG3");
     const isG3Intercom = normalizedDeviceClass.startsWith("UAG3INTERCOM");
-    const isG3Reader = normalizedDeviceClass.startsWith("UAG3READER");
+    const isG3Reader = isG3ReaderDeviceClass(normalizedDeviceClass);
     const isG3Doorbell = isG3Intercom || isG3Reader;
     const isDoorbell = capabilities.includes("door_bell") || isG3Doorbell;
 
