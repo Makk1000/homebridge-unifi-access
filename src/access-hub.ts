@@ -9,6 +9,7 @@ import type { AccessController } from "./access-controller.js";
 import { AccessDevice } from "./access-device.js";
 import { AccessReservedNames } from "./access-types.js";
 import { isG3ReaderDeviceClass } from "./access-types.js";
+import util from "node:util";
 
 export class AccessHub extends AccessDevice {
 
@@ -458,7 +459,15 @@ export class AccessHub extends AccessDevice {
     }
 
     const isDefaultUnlock = !isLocking && (this.lockDelayInterval === undefined);
-    const commandSucceeded = await this.controller.udaApi.unlock(device, unlockDuration);
+    let commandSucceeded: boolean;
+
+    if(this.isG3Reader && (unlockDuration === 0)) {
+
+      commandSucceeded = await this.lockG3Reader(device);
+    } else {
+
+      commandSucceeded = await this.controller.udaApi.unlock(device, unlockDuration);
+    }
 
     if(!commandSucceeded) {
 
@@ -533,7 +542,17 @@ export class AccessHub extends AccessDevice {
         return;
       }
 
-      if(!(await this.controller.udaApi.unlock(device, 0))) {
+      let commandSucceeded: boolean;
+
+      if(this.isG3Reader) {
+
+        commandSucceeded = await this.lockG3Reader(device);
+      } else {
+
+        commandSucceeded = await this.controller.udaApi.unlock(device, 0);
+      }
+
+      if(!commandSucceeded) {
 
         this.log.error("Unable to reset the %s to a locked state after unlocking.", this.lockRelayDescription);
 
@@ -550,9 +569,53 @@ export class AccessHub extends AccessDevice {
     }
   }
 
-// Return the current HomeKit DPS state that we are tracking for this hub.
-  private get hkDpsState(): CharacteristicValue {
+  private async lockG3Reader(device: AccessDeviceConfig): Promise<boolean> {
 
+    const locationId = device.location_id ?? this.uda.location_id ?? this.uda.door?.unique_id;
+
+    if(!locationId) {
+
+      this.log.error("Unable to determine the lock location for the %s.", this.lockRelayDescription);
+
+      return false;
+    }
+
+    const endpoint = this.controller.udaApi.getApiEndpoint("location");
+
+    if(!endpoint?.length) {
+
+      this.log.error("Unable to determine the lock endpoint for the %s.", this.lockRelayDescription);
+
+      return false;
+    }
+
+    const response = await this.controller.udaApi.retrieve(endpoint + "/" + locationId + "/lock", { method: "PUT" });
+
+    if(!response) {
+
+      return false;
+    }
+
+    try {
+
+      const status = await response.json() as { codeS?: string };
+
+      if(status?.codeS === "SUCCESS") {
+
+        return true;
+      }
+
+      this.log.error("Error locking the %s: \n%s", this.lockRelayDescription,
+        util.inspect(status, { colors: false, depth: null, sorted: true }));
+    } catch(error) {
+
+      this.log.error("Unable to parse the lock response for the %s: %s.", this.lockRelayDescription, error);
+    }
+
+    return false;
+  }
+
+  // Return the current HomeKit DPS state that we are tracking for this hub.  private get hkDpsState(): CharacteristicValue {
     return this.accessory.getService(this.hap.Service.ContactSensor)?.getCharacteristic(this.hap.Characteristic.ContactSensorState).value ??
       this.hap.Characteristic.ContactSensorState.CONTACT_NOT_DETECTED;
   }
@@ -791,7 +854,7 @@ export class AccessHub extends AccessDevice {
 
         break;
 
-      case "access.data.device.update":
+      case "access.data.device.update": {
 
         // Process a lock update event if our state has changed.
         const updatedLockState = this.hubLockState;
@@ -844,6 +907,7 @@ export class AccessHub extends AccessDevice {
         }
 
         break;
+      }
 
       case "access.remote_view":
       case "access.remote_call":
