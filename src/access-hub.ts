@@ -22,6 +22,7 @@ export class AccessHub extends AccessDevice {
   private doorbellRingRequestId: string | null;
   private lockDelayInterval: number | undefined;
   private lockResetTimer: NodeJS.Timeout | null;
+  private g3ReaderLockStateOverride: CharacteristicValue | null;
   private readonly deviceClass: string;
   public uda: AccessDeviceConfig;
 
@@ -36,6 +37,7 @@ export class AccessHub extends AccessDevice {
     this.lockDelayInterval = this.getFeatureNumber(this.featurePrefix + ".LockDelayInterval") ?? undefined;
     this.lockResetTimer = null;
     this.doorbellRingRequestId = null;
+    this.g3ReaderLockStateOverride = null;
 
     // If we attempt to set the delay interval to something invalid, then assume we are using the default unlock behavior.
     if((this.lockDelayInterval !== undefined) && (this.lockDelayInterval < 0)) {
@@ -531,6 +533,16 @@ export class AccessHub extends AccessDevice {
       this.lockResetTimer = null;
     }
 
+    if(this.isG3Reader) {
+
+      this.g3ReaderLockStateOverride = this.hap.Characteristic.LockCurrentState.SECURED;
+
+      if(this.hkLockState !== this.hap.Characteristic.LockCurrentState.SECURED) {
+
+        this.hkLockState = this.hap.Characteristic.LockCurrentState.SECURED;
+      }
+    }
+
     const effectiveDelay = delay ?? (this.isG3Reader ? G3_READER_LOCK_RESET_DELAY : DEFAULT_LOCK_RESET_DELAY);
 
     this.lockResetTimer = setTimeout(() => {
@@ -740,6 +752,11 @@ export class AccessHub extends AccessDevice {
   // Return the current state of the relay lock on the hub.
   private get hubLockState(): CharacteristicValue {
 
+    if(this.isG3Reader && (this.g3ReaderLockStateOverride !== null)) {
+
+      return this.g3ReaderLockStateOverride;
+    }
+
     let relayType;
 
     switch(this.uda.device_type) {
@@ -876,6 +893,11 @@ export class AccessHub extends AccessDevice {
       case "access.data.device.remote_unlock":
 
         // Process an Access unlock event.
+        if(this.isG3Reader) {
+
+          this.g3ReaderLockStateOverride = null;
+        }
+
         this.hkLockState = this.hap.Characteristic.LockCurrentState.UNSECURED;
 
         if(this.lockDelayInterval === undefined) {
@@ -901,6 +923,11 @@ export class AccessHub extends AccessDevice {
       case "access.data.device.update": {
 
         // Process a lock update event if our state has changed.
+        if(this.isG3Reader) {
+
+          this.g3ReaderLockStateOverride = null;
+        }
+
         const updatedLockState = this.hubLockState;
 
         if(updatedLockState !== this.hkLockState) {
