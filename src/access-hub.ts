@@ -12,7 +12,7 @@ import { isG3ReaderDeviceClass } from "./access-types.js";
 import util from "node:util";
 
 const DEFAULT_LOCK_RESET_DELAY = 5000;
-const G3_READER_LOCK_RESET_DELAY = 1000;
+const G3_READER_LOCK_RESET_DELAY = 2000;
 const LOCK_RESET_MAX_ATTEMPTS = 6;
 const LOCK_RESET_RETRY_DELAY = 5000;
 
