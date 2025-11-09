@@ -11,6 +11,10 @@ import { AccessReservedNames } from "./access-types.js";
 import { isG3ReaderDeviceClass } from "./access-types.js";
 import util from "node:util";
 
+const DEFAULT_LOCK_RESET_DELAY = 5000;
+const LOCK_RESET_MAX_ATTEMPTS = 6;
+const LOCK_RESET_RETRY_DELAY = 5000;
+
 export class AccessHub extends AccessDevice {
 
   private _hkLockState: CharacteristicValue;
@@ -518,7 +522,7 @@ export class AccessHub extends AccessDevice {
     } as AccessDeviceConfig;
   }
 
-  private scheduleDefaultLockReset(device: AccessDeviceConfig): void {
+  private scheduleDefaultLockReset(device: AccessDeviceConfig, attempt = 0, delay = DEFAULT_LOCK_RESET_DELAY): void {
 
     if(this.lockResetTimer) {
 
@@ -529,15 +533,26 @@ export class AccessHub extends AccessDevice {
     this.lockResetTimer = setTimeout(() => {
 
       this.lockResetTimer = null;
-      void this.resetLockToDefaultState(device);
-    }, 5000);
+      void this.resetLockToDefaultState(device, attempt);
+    }, delay);
   }
 
-  private async resetLockToDefaultState(device: AccessDeviceConfig): Promise<void> {
+  private async resetLockToDefaultState(device: AccessDeviceConfig, attempt = 0): Promise<void> {
 
     try {
 
       if(!this.isOnline) {
+
+        const nextAttempt = attempt + 1;
+
+        if(nextAttempt < LOCK_RESET_MAX_ATTEMPTS) {
+
+          this.log.debug("Retrying lock reset while offline (attempt %s of %s).", nextAttempt + 1, LOCK_RESET_MAX_ATTEMPTS);
+          this.scheduleDefaultLockReset(device, nextAttempt, LOCK_RESET_RETRY_DELAY);
+        } else {
+
+          this.log.error("Unable to reset the %s to a locked state after unlocking.", this.lockRelayDescription);
+        }
 
         return;
       }
@@ -554,8 +569,17 @@ export class AccessHub extends AccessDevice {
 
       if(!commandSucceeded) {
 
-        this.log.error("Unable to reset the %s to a locked state after unlocking.", this.lockRelayDescription);
+        const nextAttempt = attempt + 1;
 
+        if(nextAttempt < LOCK_RESET_MAX_ATTEMPTS) {
+
+          this.log.debug("Retrying lock reset after failure (attempt %s of %s).", nextAttempt + 1, LOCK_RESET_MAX_ATTEMPTS);
+          this.scheduleDefaultLockReset(device, nextAttempt, LOCK_RESET_RETRY_DELAY);
+        } else {
+
+          this.log.error("Unable to reset the %s to a locked state after unlocking.", this.lockRelayDescription);
+        }
+        
         return;
       }
 
@@ -564,6 +588,16 @@ export class AccessHub extends AccessDevice {
         this.hkLockState = this.hap.Characteristic.LockCurrentState.SECURED;
       }
     } catch(error) {
+
+      const nextAttempt = attempt + 1;
+
+      if(nextAttempt < LOCK_RESET_MAX_ATTEMPTS) {
+
+        this.log.debug("Retrying lock reset after error (attempt %s of %s): %s.", nextAttempt + 1, LOCK_RESET_MAX_ATTEMPTS, error);
+        this.scheduleDefaultLockReset(device, nextAttempt, LOCK_RESET_RETRY_DELAY);
+
+        return;
+      }
 
       this.log.error("Unable to reset the %s to a locked state after unlocking: %s.", this.lockRelayDescription, error);
     }
@@ -617,6 +651,7 @@ export class AccessHub extends AccessDevice {
 
   // Return the current HomeKit DPS state that we are tracking for this hub.
   private get hkDpsState(): CharacteristicValue {
+    
     return this.accessory.getService(this.hap.Service.ContactSensor)?.getCharacteristic(this.hap.Characteristic.ContactSensorState).value ??
       this.hap.Characteristic.ContactSensorState.CONTACT_NOT_DETECTED;
   }
