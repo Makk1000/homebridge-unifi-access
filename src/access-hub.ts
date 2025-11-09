@@ -8,6 +8,7 @@ import { acquireService, validService } from "homebridge-plugin-utils";
 import type { AccessController } from "./access-controller.js";
 import { AccessDevice } from "./access-device.js";
 import { AccessReservedNames } from "./access-types.js";
+import { isG3ReaderDeviceClass } from "./access-types.js";
 
 export class AccessHub extends AccessDevice {
 
@@ -50,7 +51,7 @@ export class AccessHub extends AccessDevice {
 
   private get isG3Reader(): boolean {
 
-    return this.deviceClass.startsWith("UAG3READER");
+    return isG3ReaderDeviceClass(this.deviceClass);
   }
 
   protected get positionSensorDisplayName(): string {
