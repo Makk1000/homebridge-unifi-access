@@ -615,7 +615,8 @@ export class AccessHub extends AccessDevice {
     return false;
   }
 
-  // Return the current HomeKit DPS state that we are tracking for this hub.  private get hkDpsState(): CharacteristicValue {
+  // Return the current HomeKit DPS state that we are tracking for this hub.
+  private get hkDpsState(): CharacteristicValue {
     return this.accessory.getService(this.hap.Service.ContactSensor)?.getCharacteristic(this.hap.Characteristic.ContactSensorState).value ??
       this.hap.Characteristic.ContactSensorState.CONTACT_NOT_DETECTED;
   }
