@@ -139,7 +139,17 @@ export class AccessHub extends AccessDevice {
     this.configureDoorbell();
     this.configureDoorbellTrigger();
 
-    // Configure the door position sensor.
+        if(this.isG3Reader) {
+
+      const locationId = this.uda.location_id ?? this.uda.door?.unique_id;
+
+      if(locationId) {
+
+        this.controller.events.on(locationId, this.listeners[locationId] = this.eventHandler.bind(this));
+      }
+    }
+
+// Configure the door position sensor.
     this.configureDps();
 
     // Configure MQTT services.
@@ -483,7 +493,7 @@ export class AccessHub extends AccessDevice {
       return false;
     }
 
-        const targetState = isLocking ? this.hap.Characteristic.LockCurrentState.SECURED :
+    const targetState = isLocking ? this.hap.Characteristic.LockCurrentState.SECURED :
       this.hap.Characteristic.LockCurrentState.UNSECURED;
 
     if(this.isG3Reader) {
@@ -498,7 +508,7 @@ export class AccessHub extends AccessDevice {
 
     }
 
-if(isDefaultUnlock) {
+    if(isDefaultUnlock) {
 
       this.scheduleDefaultLockReset(device);
     }
@@ -906,6 +916,7 @@ if(isDefaultUnlock) {
     switch(packet.event) {
 
       case "access.data.device.remote_unlock":
+      case "access.data.location.remote_unlock":
 
         // Process an Access unlock event.
         if(this.isG3Reader) {
