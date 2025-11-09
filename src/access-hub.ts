@@ -794,14 +794,27 @@ export class AccessHub extends AccessDevice {
       case "access.data.device.update":
 
         // Process a lock update event if our state has changed.
-        if(this.hubLockState !== this.hkLockState) {
+        const updatedLockState = this.hubLockState;
 
-          this.hkLockState = this.hubLockState;
+        if(updatedLockState !== this.hkLockState) {
 
-          if((this.hkLockState === this.hap.Characteristic.LockCurrentState.SECURED) && this.lockResetTimer) {
+          this.hkLockState = updatedLockState;
 
-            clearTimeout(this.lockResetTimer);
-            this.lockResetTimer = null;
+          if(this.hkLockState === this.hap.Characteristic.LockCurrentState.SECURED) {
+
+            if(this.lockResetTimer) {
+
+              clearTimeout(this.lockResetTimer);
+              this.lockResetTimer = null;
+            }
+          } else if(this.lockDelayInterval === undefined) {
+
+            const device = this.getCommandDeviceConfig();
+
+            if(device) {
+
+              this.scheduleDefaultLockReset(device);
+            }
           }
 
           this.controller.mqtt?.publish(this.id, "lock", this.hkLockState === this.hap.Characteristic.LockCurrentState.SECURED ? "true" : "false");
