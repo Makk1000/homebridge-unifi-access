@@ -483,7 +483,22 @@ export class AccessHub extends AccessDevice {
       return false;
     }
 
-    if(isDefaultUnlock) {
+        const targetState = isLocking ? this.hap.Characteristic.LockCurrentState.SECURED :
+      this.hap.Characteristic.LockCurrentState.UNSECURED;
+
+    if(this.isG3Reader) {
+
+      this.g3ReaderLockStateOverride = targetState;
+
+    }
+
+    if(this.hkLockState !== targetState) {
+
+      this.hkLockState = targetState;
+
+    }
+
+if(isDefaultUnlock) {
 
       this.scheduleDefaultLockReset(device);
     }
@@ -531,16 +546,6 @@ export class AccessHub extends AccessDevice {
 
       clearTimeout(this.lockResetTimer);
       this.lockResetTimer = null;
-    }
-
-    if(this.isG3Reader) {
-
-      this.g3ReaderLockStateOverride = this.hap.Characteristic.LockCurrentState.SECURED;
-
-      if(this.hkLockState !== this.hap.Characteristic.LockCurrentState.SECURED) {
-
-        this.hkLockState = this.hap.Characteristic.LockCurrentState.SECURED;
-      }
     }
 
     const effectiveDelay = delay ?? (this.isG3Reader ? G3_READER_LOCK_RESET_DELAY : DEFAULT_LOCK_RESET_DELAY);
