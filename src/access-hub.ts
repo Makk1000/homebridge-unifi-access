@@ -497,19 +497,16 @@ export class AccessHub extends AccessDevice {
       return null;
     }
 
-    const deviceConfig = {
+    return {
 
       ...this.uda,
-      capabilities
+      capabilities,
+      ...(locationId && (locationId !== this.uda.location_id) ? {
+
+        // eslint-disable-next-line camelcase
+        location_id: locationId
+      } : {})
     } as AccessDeviceConfig;
-
-    if(locationId && (locationId !== this.uda.location_id)) {
-
-      // eslint-disable-next-line camelcase
-      deviceConfig.location_id = locationId;
-    }
-
-    return deviceConfig;
   }
 
   private scheduleDefaultLockReset(device: AccessDeviceConfig): void {
