@@ -554,12 +554,22 @@ export class AccessHub extends AccessDevice {
 
   private async resetLockToDefaultState(device: AccessDeviceConfig, attempt = 0): Promise<void> {
 
-    try {
+    if(this.isG3Reader) {
 
-      if(this.isG3Reader && (this.hkLockState !== this.hap.Characteristic.LockCurrentState.SECURED)) {
+      if(this.g3ReaderLockStateOverride !== this.hap.Characteristic.LockCurrentState.SECURED) {
+
+        this.g3ReaderLockStateOverride = this.hap.Characteristic.LockCurrentState.SECURED;
+      }
+
+      if(this.hkLockState !== this.hap.Characteristic.LockCurrentState.SECURED) {
 
         this.hkLockState = this.hap.Characteristic.LockCurrentState.SECURED;
       }
+
+      return;
+    }
+
+    try {
 
       if(!this.isOnline) {
 
