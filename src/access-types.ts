@@ -16,10 +16,14 @@ export enum AccessReservedNames {
   SWITCH_MOTION_TRIGGER = "MotionSensorTrigger"
 }
 
-// Known UniFi Access device class prefixes for G3 Reader models. The controller may
-// report these readers either as "UA-G3-Reader" or with the shorter "UA G3 B" label,
-// so we normalize both representations here.
-export const G3_READER_CLASS_PREFIXES = [ "UAG3READER", "UAG3B" ];
+// Known UniFi Access device class representations for G3 Reader models. Some
+// controller builds advertise the reader with the generic "UA G3" type while
+// others include a "Reader" or "G3 B" suffix. We normalize all of them here.
+const G3_READER_CLASS_PREFIXES = [ "UAG3READER", "UAG3B" ];
+const G3_READER_CLASS_EXACT_MATCHES = [ "UAG3" ];
 
 // Determine whether a normalized device class represents a G3 Reader variant.
-export const isG3ReaderDeviceClass = (normalizedDeviceClass: string): boolean => G3_READER_CLASS_PREFIXES.some((prefix) => normalizedDeviceClass.startsWith(prefix));
+export const isG3ReaderDeviceClass = (normalizedDeviceClass: string): boolean => (
+  G3_READER_CLASS_EXACT_MATCHES.includes(normalizedDeviceClass) ||
+  G3_READER_CLASS_PREFIXES.some((prefix) => normalizedDeviceClass.startsWith(prefix))
+);
