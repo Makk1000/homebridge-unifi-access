@@ -139,7 +139,7 @@ export class AccessHub extends AccessDevice {
     this.configureDoorbell();
     this.configureDoorbellTrigger();
 
-        if(this.isG3Reader) {
+    if(this.isG3Reader) {
 
       const locationId = this.uda.location_id ?? this.uda.door?.unique_id;
 
@@ -149,7 +149,7 @@ export class AccessHub extends AccessDevice {
       }
     }
 
-// Configure the door position sensor.
+    // Configure the door position sensor.
     this.configureDps();
 
     // Configure MQTT services.
@@ -910,6 +910,50 @@ export class AccessHub extends AccessDevice {
     return (ringEvent.connected_uah_id === uniqueId) || (ringEvent.device_id === uniqueId) || (packet.event_object_id === uniqueId);
   }
 
+  private isG3ReaderAccessGrantEvent(packet: AccessEventPacket): boolean {
+
+    if(!this.isG3Reader) {
+
+      return false;
+    }
+
+    const locationId = this.uda.location_id ?? this.uda.door?.unique_id;
+
+    if(!locationId || (packet.event_object_id !== locationId)) {
+
+      return false;
+    }
+
+    return packet.event.toLowerCase() === "access.data.location.access_granted";
+  }
+
+  private handleUnlockEvent(): void {
+
+    if(this.isG3Reader) {
+
+      this.g3ReaderLockStateOverride = null;
+    }
+
+    this.hkLockState = this.hap.Characteristic.LockCurrentState.UNSECURED;
+
+    if(this.lockDelayInterval === undefined) {
+
+      const device = this.getCommandDeviceConfig();
+
+      if(device) {
+
+        this.scheduleDefaultLockReset(device);
+      }
+    }
+
+    this.controller.mqtt?.publish(this.id, "lock", "false");
+
+    if(this.hints.logLock) {
+
+      this.log.info("Unlocked.");
+    }
+  }
+
   // Handle hub-related events.
   private eventHandler(packet: AccessEventPacket): void {
 
@@ -918,31 +962,18 @@ export class AccessHub extends AccessDevice {
       case "access.data.device.remote_unlock":
       case "access.data.location.remote_unlock":
 
-        // Process an Access unlock event.
-        if(this.isG3Reader) {
+        this.handleUnlockEvent();
 
-          this.g3ReaderLockStateOverride = null;
+           break;
+        
+      case "access.data.location.access_granted":
+
+        if(!this.isG3ReaderAccessGrantEvent(packet)) {
+
+          break;
         }
 
-        this.hkLockState = this.hap.Characteristic.LockCurrentState.UNSECURED;
-
-        if(this.lockDelayInterval === undefined) {
-
-          const device = this.getCommandDeviceConfig();
-
-          if(device) {
-
-            this.scheduleDefaultLockReset(device);
-          }
-        }
-
-        // Publish to MQTT, if configured to do so.
-        this.controller.mqtt?.publish(this.id, "lock", "false");
-
-        if(this.hints.logLock) {
-
-          this.log.info("Unlocked.");
-        }
+        this.handleUnlockEvent();
 
         break;
 
