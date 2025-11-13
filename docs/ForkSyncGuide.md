@@ -93,12 +93,36 @@ sudo npm run build
 
 ```bash
 git tag -a v1.10.1 -m "My fork: upstream 1.10.0 plus custom tweaks"
-git push origin release/v1.10.1
+git push origin release/v1.10.1   # push the branch before deleting it locally
 git push origin v1.10.1
 git checkout main
 git merge --ff-only release/v1.10.1
 git push origin main
 ```
+
+### When the push fails
+
+* **`fatal: tag 'v1.10.1' already exists`** – the tag already lives locally. If it also lives on the
+  remote, you can skip the `git tag` and `git push origin v1.10.1` commands. If you intentionally
+  need to recreate it, delete the local and remote copies first:
+  ```bash
+  git tag -d v1.10.1
+  git push origin :refs/tags/v1.10.1
+  # retag, then push again
+  git tag -a v1.10.1 -m "My fork: upstream 1.10.0 plus custom tweaks"
+  git push origin v1.10.1
+  ```
+* **`error: src refspec release/v1.10.1 does not match any`** – the branch does not exist locally,
+  usually because `git checkout -b release/v1.10.1` was never run or the branch was deleted after
+  rebasing. Recreate it from the commit you plan to ship (often `main`), then push:
+  ```bash
+  git checkout -b release/v1.10.1 <commit>
+  git push origin release/v1.10.1
+  ```
+* **`merge: release/v1.10.1 - not something we can merge`** – you tried to fast-forward `main`
+  after the release branch was deleted. Recreate / fetch the branch, then merge.
+* **`Updates were rejected because the remote contains work that you do not have locally`** – run
+  `git pull --ff-only origin main` to obtain the upstream changes before pushing.
 
 ## 7. Install or publish
 
@@ -116,4 +140,3 @@ sudo npm install -g .
 ```
 
 Following this checklist keeps both releases available and documents the conflict-resolution steps that may appear while rebasing (`git status`, `git add`, `git rebase --continue`).
-package-lock.json
