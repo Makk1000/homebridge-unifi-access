@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file. This project uses [semantic versioning](https://semver.org/).
 
+## 1.10.1 (2025-11-09)
+  * Sync fork with upstream 1.10.0 release, bringing in the latest controller compatibility updates and fixes.
+  * Retain all fork-specific adjustments introduced in 1.9.3 so they continue to be available on top of the upstream baseline.
+  * Document the combined release so it is easy to distinguish from both upstream 1.10.0 and the prior fork-only 1.9.3 build.
+
 ## 1.9.3 (2025-10-16 and 2025-11-08)
   * New feature: add support for the UniFi Access G3 Intercom and G3 Reader, including HomeKit doorbell accessories, MQTT telemetry, and feature options.
   * Housekeeping.
