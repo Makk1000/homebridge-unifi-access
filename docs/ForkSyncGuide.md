@@ -59,7 +59,14 @@ git status    # shows which files need attention
 git add <file>
 git rebase --continue
 ```
-Repeat until `git status` is clean and the rebase finishes.
+Repeat until `git status` is clean and the rebase finishes. Seeing the same filename appear in multiple successive commits is normal—each upstream commit that touched that file must be reconciled once. As long as `git status` only lists the current commit’s conflicts, you are on the right track. If you realize a conflicted commit is no longer needed (for example, upstream already contains your change), `git rebase --skip` will drop it safely, and `git rebase --abort` returns you to the pre-rebase state if you want to start over.
+
+> **Tip:** If you are facing dozens of similar conflicts, enable Git’s conflict memoization so resolved hunks are remembered for the rest of the rebase:
+> ```bash
+> git config rerere.enabled true
+> git config rerere.autoupdate true
+> ```
+> After turning this on, resolve the conflict once, stage the file, and Git will auto-apply the same choice when the pattern reappears later in the rebase.
 
 ## 4. Reapply fork-specific patches and run checks
 
