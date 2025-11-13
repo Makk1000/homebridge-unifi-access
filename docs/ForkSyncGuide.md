@@ -2,6 +2,15 @@
 
 This repository is a fork of [`hjdhjd/homebridge-unifi-access`](https://github.com/hjdhjd/homebridge-unifi-access). The steps below capture the complete workflow for keeping this fork aligned with upstream releases while preserving prior fork-specific versions (for example, keeping `v1.9.3` available while building a new `v1.10.1`).
 
+> **Scenario recap**
+>
+> * `origin` = [`makk1000/homebridge-unifi-access`](https://github.com/makk1000/homebridge-unifi-access) (fork).
+> * `upstream` = [`hjdhjd/homebridge-unifi-access`](https://github.com/hjdhjd/homebridge-unifi-access) (official source).
+> * Published fork tag `v1.9.3` must remain untouched so it can be reinstalled at any time.
+> * We want to consume upstream `v1.10.0`, layer fork-only patches on top, and tag / publish the result as `v1.10.1`.
+>
+> These notes assume `main` already points to the current fork release and that a `v1.9.3` backup has been created, but the commands below show how to recreate that safety net whenever necessary.
+
 ## 1. Prepare remotes and tags
 
 1. Clone your fork and add upstream once:
@@ -18,6 +27,8 @@ This repository is a fork of [`hjdhjd/homebridge-unifi-access`](https://github.c
    git push origin v1.9.3
    ```
 
+   _This protects the old release even if `main` moves forward._
+
 ## 2. Preserve a rollback branch (optional but recommended)
 
 Create a branch that points at the old tag so you can inspect or rebuild it without touching the tag itself:
@@ -25,6 +36,8 @@ Create a branch that points at the old tag so you can inspect or rebuild it with
 git branch v1.9.3-backup v1.9.3
 git push origin v1.9.3-backup
 ```
+
+You can create additional archive branches if more hotfix lines are needed later.
 
 ## 3. Start a release branch for the new upstream version
 
@@ -50,7 +63,7 @@ Repeat until `git status` is clean and the rebase finishes.
 
 ## 4. Reapply fork-specific patches and run checks
 
-If the rebase dropped any custom commits, reintroduce the changes now and commit them normally. Then reinstall dependencies and run the quality gates defined in `package.json`:
+If the rebase dropped any custom commits, reintroduce the changes now and commit them normally. `git log upstream/main..HEAD` is handy for spotting which patches are unique to the fork. Then reinstall dependencies and run the quality gates defined in `package.json`:
 ```bash
 npm install
 npm run lint
@@ -61,7 +74,8 @@ npm run build
 
 1. Edit `package.json`, `package-lock.json`, and `docs/Changelog.md`:
    * bump the version (e.g., `1.10.1`),
-   * document that this release equals upstream `v1.10.0` plus your fork changes.
+   * document that this release equals upstream `v1.10.0` plus your fork changes,
+   * double-check that any custom release notes (for example, “preserves ability to reinstall `v1.9.3`”) are included.
 2. Stage and commit:
    ```bash
    git add package.json package-lock.json docs/Changelog.md
