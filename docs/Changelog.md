@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file. This project uses [semantic versioning](https://semver.org/).
 
-## 1.10.1 (2025-11-09)
+## 1.10.1 (2025-11-13)
   * Sync fork with upstream 1.10.0 release, bringing in the latest controller compatibility updates and fixes.
   * Retain all fork-specific adjustments introduced in 1.9.3 so they continue to be available on top of the upstream baseline.
   * Document the combined release so it is easy to distinguish from both upstream 1.10.0 and the prior fork-only 1.9.3 build.
