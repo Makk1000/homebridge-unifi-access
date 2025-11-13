@@ -72,9 +72,9 @@ Repeat until `git status` is clean and the rebase finishes. Seeing the same file
 
 If the rebase dropped any custom commits, reintroduce the changes now and commit them normally. `git log upstream/main..HEAD` is handy for spotting which patches are unique to the fork. Then reinstall dependencies and run the quality gates defined in `package.json`:
 ```bash
-npm install
-npm run lint
-npm run build
+sudo npm install
+sudo npm run lint
+sudo npm run build
 ```
 
 ## 5. Update metadata and changelog
