@@ -114,9 +114,11 @@ git push origin main
   ```
 * **`error: src refspec release/v1.10.1 does not match any`** – the branch does not exist locally,
   usually because `git checkout -b release/v1.10.1` was never run or the branch was deleted after
-  rebasing. Recreate it from the commit you plan to ship (often `main`), then push:
+  rebasing. Recreate it from the commit you plan to ship (often `main`), then push. Replace
+  `COMMIT_TO_SHIP` with either `main`, a tag, or the specific commit SHA you intend to release—the
+  literal angle brackets were only a placeholder and will cause a shell parse error:
   ```bash
-  git checkout -b release/v1.10.1 <commit>
+  git checkout -b release/v1.10.1 COMMIT_TO_SHIP
   git push origin release/v1.10.1
   ```
 * **`merge: release/v1.10.1 - not something we can merge`** – you tried to fast-forward `main`
