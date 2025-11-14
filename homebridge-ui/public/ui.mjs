@@ -113,6 +113,30 @@ const getDevices = async (controller) => {
 // Return whether a given device is a controller.
 const isController = (device) => device.display_model === "controller";
 
+const normalizeDeviceType = (device) => (device?.device_type ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+
+const isG3ReaderDevice = (device) => normalizeDeviceType(device).startsWith("UAG3READER");
+
+const supportsCapability = (device, capability) => {
+
+  if(!device) {
+
+    return false;
+  }
+
+  if(device.capabilities?.includes(capability)) {
+
+    return true;
+  }
+
+  if((capability === "is_hub") && isG3ReaderDevice(device)) {
+
+    return true;
+  }
+
+  return false;
+};
+
 const isSupportedDevice = (device) => {
 
   if(!device) {
@@ -125,16 +149,12 @@ const isSupportedDevice = (device) => {
     return true;
   }
 
-  const capabilities = device.capabilities ?? [];
-
-  if(capabilities.some(capability => ["door_bell", "is_gate", "is_gate_hub", "is_hub"].includes(capability))) {
+  if(["door_bell", "is_gate", "is_gate_hub", "is_hub"].some(capability => supportsCapability(device, capability))) {
 
     return true;
   }
 
-  const normalizedDeviceType = (device.device_type ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-
-  return normalizedDeviceType.startsWith("UAG3");
+  return normalizeDeviceType(device).startsWith("UAG3");
 };
 
 // Show the list of Access devices associated with a controller, grouped by model.
@@ -227,7 +247,7 @@ const showSidebarDevices = (controller, devices) => {
 const validOption = (device, option) => {
 
   if(device && (device.display_model !== "controller") && (
-    (option.hasCapability && (!device.capabilities || !option.hasCapability.some(x => device.capabilities.includes(x)))) ||
+    (option.hasCapability && !option.hasCapability.some(capability => supportsCapability(device, capability))) ||
     (option.hasProperty && !option.hasProperty.some(x => x in device)) ||
     (option.modelKey && (option.modelKey !== "all") && !option.modelKey.includes(device.display_model)))) {
 
@@ -247,8 +267,7 @@ const validOptionCategory = (device, category) => {
       return false;
     }
 
-    if(category.hasCapability && (!device.capabilities || !category.hasCapability.some(capability => device.capabilities
-      .includes(capability)))) {
+    if(category.hasCapability && !category.hasCapability.some(capability => supportsCapability(device, capability))) {
 
       return false;
     }
