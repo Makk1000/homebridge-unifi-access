@@ -155,7 +155,18 @@ export class AccessHub extends AccessDevice {
     this.uda = device;
     this.deviceClass = (device.device_type ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
     this._hkLockState = this.hubLockState;
-    this.lockDelayInterval = this.getFeatureNumber(this.featurePrefix + ".LockDelayInterval") ?? undefined;
+    const configuredLockDelay = this.getFeatureNumber(this.featurePrefix + ".LockDelayInterval") ?? undefined;
+
+    if(this.isG3Reader && (configuredLockDelay !== undefined)) {
+
+      const lockDelayDescription = configuredLockDelay === 0 ? "an indefinite unlock interval" :
+        "a " + configuredLockDelay.toString() + " minute unlock interval";
+
+      this.log.warn("The %s does not support %s. Falling back to the default unlock behavior.",
+        this.lockRelayDescription, lockDelayDescription);
+    }
+
+    this.lockDelayInterval = this.isG3Reader ? undefined : configuredLockDelay;
     this.lockResetTimer = null;
     this.doorbellRingRequestId = null;
     this.g3ReaderLockStateOverride = null;
