@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file. This projec
   * Sync fork with upstream 1.10.0 release, bringing in the latest controller compatibility updates and fixes.
   * Retain all fork-specific adjustments introduced in 1.9.3 so they continue to be available on top of the upstream baseline.
   * Document the combined release so it is easy to distinguish from both upstream 1.10.0 and the prior fork-only 1.9.3 build.
+  * Enable the lock delay interval feature option by default on hubs and Gate Hub devices, matching the upstream 1.10.0 behavior change.
 
 ## 1.10.0 (2025-11-10)
   * New feature: UniFi Access Gate Hub support. Thank you to @tdabasinskas for the plumbing tidbits - I appreciate your contribution to the community!
