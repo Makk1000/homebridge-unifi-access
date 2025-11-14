@@ -79,7 +79,7 @@ These option(s) apply to: UniFi Access Gate Hub devices.
 
 | Option                                           | Description
 |--------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
-| `Gate.LockDelayInterval<I>.Value</I>`             | Delay, in minutes, before locking the gate lock relay, once it's been unlocked by HomeKit. If set to 0, it will remain unlocked indefinitely. By default, the gate lock relay will lock five seconds after unlocking. **(default: 0)**.
+| `Gate.LockDelayInterval<I>.Value</I>`             | Delay, in minutes, before locking the gate lock relay, once it's been unlocked by HomeKit. If set to 0, it will remain unlocked indefinitely. By default, the gate lock relay will lock five seconds after unlocking. **(default: enabled, 0 minutes)**.
 | `Gate.Lock.Trigger`                               | Add a switch accessory to control the gate lock. This can be useful in automation scenarios where you want to work around HomeKit's security restrictions for controlling locks and triggering events when a lock or unlock event occurs. **(default: disabled)**.
 | `Gate.Doorbell`                                   | Add a doorbell accessory to handle gate call button events in HomeKit. **(default: enabled)**. <BR>*Supported on UniFi Access Gate Hubs that provide a call button.*
 | `Gate.Doorbell.Trigger`                           | Add a switch accessory for automation scenarios to reflect (but not trigger) gate call button events. **(default: disabled)**. <BR>*Supported on UniFi Access Gate Hubs that provide a call button.*
@@ -94,7 +94,7 @@ These option(s) apply to: all Access device types.
 
 | Option                                           | Description
 |--------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-| `Hub.LockDelayInterval<I>.Value</I>`             | Delay, in minutes, before locking the door lock relay, once it's been unlocked by HomeKit. If set to 0, it will remain unlocked indefinitely. By default, the door lock relay will lock five seconds after unlocking. **(default: 0)**.
+| `Hub.LockDelayInterval<I>.Value</I>`             | Delay, in minutes, before locking the door lock relay, once it's been unlocked by HomeKit. If set to 0, it will remain unlocked indefinitely. By default, the door lock relay will lock five seconds after unlocking. **(default: enabled, 0 minutes)**.
 | `Hub.Lock.Trigger`                               | Add a switch accessory to control the lock. This can be useful in automation scenarios where you want to work around HomeKit's security restrictions for controlling locks and triggering events when a lock or unlock event occurs. **(default: disabled)**.
 | `Hub.Doorbell`                                   | Add a doorbell accessory to handle doorbell ring events in HomeKit. **(default: enabled)**. <BR>*Supported on UniFi Access hubs that have a doorbell.*
 | `Hub.Doorbell.Trigger`                           | Add a switch accessory for automation scenarios to reflect (but not trigger) doorbell ring events on an Access doorbell. **(default: disabled)**. <BR>*Supported on UniFi Access hubs that have a doorbell.*
