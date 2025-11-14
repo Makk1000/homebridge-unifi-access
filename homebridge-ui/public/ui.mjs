@@ -113,11 +113,35 @@ const getDevices = async (controller) => {
 // Return whether a given device is a controller.
 const isController = (device) => device.display_model === "controller";
 
+const isSupportedDevice = (device) => {
+
+  if(!device) {
+
+    return false;
+  }
+
+  if(device.display_model === "controller") {
+
+    return true;
+  }
+
+  const capabilities = device.capabilities ?? [];
+
+  if(capabilities.some(capability => ["door_bell", "is_gate", "is_gate_hub", "is_hub"].includes(capability))) {
+
+    return true;
+  }
+
+  const normalizedDeviceType = (device.device_type ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+
+  return normalizedDeviceType.startsWith("UAG3");
+};
+
 // Show the list of Access devices associated with a controller, grouped by model.
 const showSidebarDevices = (controller, devices) => {
 
   // Workaround for the time being to reduce the number of models we see to just the currently supported ones.
-  const modelKeys = [...new Set(devices.filter(device => ["controller"].includes(device.display_model) || device.capabilities.includes("is_hub"))
+  const modelKeys = [...new Set(devices.filter(device => isSupportedDevice(device))
     .map(device => (device.device_type === "UAH-Ent") ? device.model : device.display_model))];
 
   // Start with a clean slate.
@@ -216,9 +240,18 @@ const validOption = (device, option) => {
 // Only show feature option categories that are valid for a particular device type.
 const validOptionCategory = (device, category) => {
 
-  if(device && (device.display_model !== "controller") && !category.modelKey.some(model => ["all", device.display_model].includes(model))) {
+  if(device && (device.display_model !== "controller")) {
 
-    return false;
+    if(category.modelKey && !category.modelKey.some(model => ["all", device.display_model].includes(model))) {
+
+      return false;
+    }
+
+    if(category.hasCapability && (!device.capabilities || !category.hasCapability.some(capability => device.capabilities
+      .includes(capability)))) {
+
+      return false;
+    }
   }
 
   return true;
