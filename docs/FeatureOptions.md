@@ -70,7 +70,7 @@ These option(s) apply to: Access controllers.
 
 | Option                                           | Description
 |--------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-| `Controller.DelayDeviceRemoval<I>.Value</I>`     | Delay, in seconds, before removing devices that are no longer detected on the Access controller. By default, devices are added and removed in realtime. **(default: 60)**.
+| `Controller.DelayDeviceRemoval<I>.Value</I>`     | Delay, in seconds, before removing devices that are no longer detected on the Access controller. By default, devices are added and removed in realtime. **(default: enabled, 60 seconds)**.
 | `Controller.Publish.Telemetry`                   | Publish all the realtime telemetry received from the Access controller to MQTT. **(default: disabled)**.
 
 #### <A NAME="gate"></A>Gate feature options.
