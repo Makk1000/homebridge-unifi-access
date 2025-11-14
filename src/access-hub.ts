@@ -16,6 +16,53 @@ const G3_READER_LOCK_RESET_DELAY = 2000;
 const LOCK_RESET_MAX_ATTEMPTS = 6;
 const LOCK_RESET_RETRY_DELAY = 5000;
 
+type DryContactSensorType = "rel" | "ren" | "rex";
+
+interface DryContactSensorDefinition {
+
+  displayNameSuffix: string,
+  logLabel: string,
+  mqttLabel: string,
+  reservedName: AccessReservedNames,
+  stateKeys: { default: string, mini?: string },
+  wiringKeys: { default: string[], mini?: string[] }
+}
+
+const DRY_CONTACT_SENSOR_TYPES: DryContactSensorType[] = [ "rel", "ren", "rex" ];
+
+const DRY_CONTACT_SENSOR_DEFINITIONS: Record<DryContactSensorType, DryContactSensorDefinition> = {
+
+  rel: {
+
+    displayNameSuffix: " REL Sensor",
+    logLabel: "REL dry contact sensor",
+    mqttLabel: "REL sensor",
+    reservedName: AccessReservedNames.CONTACT_REL,
+    stateKeys: { default: "input_state_rel", mini: "input_d1_rel" },
+    wiringKeys: { default: [ "wiring_state_rel-neg", "wiring_state_rel-pos" ], mini: [ "wiring_state_d1-rel-neg", "wiring_state_d1-rel-pos" ] }
+  },
+
+  ren: {
+
+    displayNameSuffix: " REN Sensor",
+    logLabel: "REN dry contact sensor",
+    mqttLabel: "REN sensor",
+    reservedName: AccessReservedNames.CONTACT_REN,
+    stateKeys: { default: "input_state_ren", mini: "input_d1_ren" },
+    wiringKeys: { default: [ "wiring_state_ren-neg", "wiring_state_ren-pos" ], mini: [ "wiring_state_d1-ren-neg", "wiring_state_d1-ren-pos" ] }
+  },
+
+  rex: {
+
+    displayNameSuffix: " REX Sensor",
+    logLabel: "REX dry contact sensor",
+    mqttLabel: "REX sensor",
+    reservedName: AccessReservedNames.CONTACT_REX,
+    stateKeys: { default: "input_state_rex", mini: "input_d1_rex" },
+    wiringKeys: { default: [ "wiring_state_rex-neg", "wiring_state_rex-pos" ], mini: [ "wiring_state_d1-rex-neg", "wiring_state_d1-rex-pos" ] }
+  }
+};
+
 export class AccessHub extends AccessDevice {
 
   private _hkLockState: CharacteristicValue;
@@ -24,6 +71,7 @@ export class AccessHub extends AccessDevice {
   private lockResetTimer: NodeJS.Timeout | null;
   private g3ReaderLockStateOverride: CharacteristicValue | null;
   private readonly deviceClass: string;
+  private readonly dryContactStates: Partial<Record<DryContactSensorType, CharacteristicValue>>;
   public uda: AccessDeviceConfig;
 
   // Create an instance.
@@ -38,6 +86,7 @@ export class AccessHub extends AccessDevice {
     this.lockResetTimer = null;
     this.doorbellRingRequestId = null;
     this.g3ReaderLockStateOverride = null;
+    this.dryContactStates = {};
 
     // If we attempt to set the delay interval to something invalid, then assume we are using the default unlock behavior.
     if((this.lockDelayInterval !== undefined) && (this.lockDelayInterval < 0)) {
@@ -102,8 +151,14 @@ export class AccessHub extends AccessDevice {
 
     this.hints.hasDps = this.hasCapability([ "dps_alarm", "dps_mode_selectable", "dps_trigger_level" ]) &&
       this.hasFeature(this.featurePrefix + ".DPS");
+    this.hints.hasRel = this.hasDryContactSensor("rel");
+    this.hints.hasRen = this.hasDryContactSensor("ren");
+    this.hints.hasRex = this.hasDryContactSensor("rex");
     this.hints.logDoorbell = this.hasFeature("Log.Doorbell");
     this.hints.logDps = this.hasFeature("Log.DPS");
+    this.hints.logRel = this.hasFeature("Log.REL");
+    this.hints.logRen = this.hasFeature("Log.REN");
+    this.hints.logRex = this.hasFeature("Log.REX");
     this.hints.logLock = this.hasFeature("Log.Lock");
 
     return true;
@@ -151,6 +206,7 @@ export class AccessHub extends AccessDevice {
 
     // Configure the door position sensor.
     this.configureDps();
+    this.configureDryContacts();
 
     // Configure MQTT services.
     this.configureMqtt();
@@ -224,6 +280,78 @@ export class AccessHub extends AccessDevice {
     service.updateCharacteristic(this.hap.Characteristic.ContactSensorState, this.hubDpsState);
 
     return true;
+  }
+
+  private configureDryContacts(): void {
+
+    for(const sensorType of DRY_CONTACT_SENSOR_TYPES) {
+
+      this.configureDryContactSensor(sensorType);
+    }
+  }
+
+  private configureDryContactSensor(sensorType: DryContactSensorType): void {
+
+    const hasSensor = this.getDryContactHint(sensorType, "has");
+
+    if(!validService(this.accessory, this.hap.Service.ContactSensor, hasSensor,
+      this.getDryContactDefinition(sensorType).reservedName)) {
+
+      return;
+    }
+
+    const definition = this.getDryContactDefinition(sensorType);
+    const displayName = this.getDryContactDisplayName(sensorType);
+    const service = acquireService(this.hap, this.accessory, this.hap.Service.ContactSensor, displayName,
+      definition.reservedName, () => this.log.info("Enabling the %s.", definition.logLabel));
+
+    if(!service) {
+
+      this.log.error("Unable to add the %s.", definition.logLabel);
+
+      return;
+    }
+
+    service.updateCharacteristic(this.hap.Characteristic.Name, displayName);
+    service.updateCharacteristic(this.hap.Characteristic.StatusActive, this.isOnline && this.isDryContactWired(sensorType));
+
+    const initialState = this.getDryContactState(sensorType);
+
+    this.dryContactStates[sensorType] = initialState;
+    service.updateCharacteristic(this.hap.Characteristic.ContactSensorState, initialState);
+  }
+
+  private configureDryContactMqtt(sensorType: DryContactSensorType): void {
+
+    if(!this.getDryContactHint(sensorType, "has")) {
+
+      return;
+    }
+
+    this.controller.mqtt?.subscribeGet(this.id, sensorType, this.getDryContactDefinition(sensorType).mqttLabel, () => {
+
+      if(!this.isDryContactWired(sensorType)) {
+
+        return "unknown";
+      }
+
+      const state = this.dryContactStates[sensorType] ?? this.getDryContactState(sensorType);
+
+      switch(state) {
+
+        case this.hap.Characteristic.ContactSensorState.CONTACT_DETECTED:
+
+          return "false";
+
+        case this.hap.Characteristic.ContactSensorState.CONTACT_NOT_DETECTED:
+
+          return "true";
+
+        default:
+
+          return "unknown";
+      }
+    });
   }
 
   // Configure the lock for HomeKit.
@@ -382,6 +510,11 @@ export class AccessHub extends AccessDevice {
           return "unknown";
       }
     });
+
+    for(const sensorType of DRY_CONTACT_SENSOR_TYPES) {
+
+      this.configureDryContactMqtt(sensorType);
+    }
 
     // MQTT lock status.
     this.controller.mqtt?.subscribeGet(this.id, "lock", "Lock", () => {
@@ -774,6 +907,180 @@ export class AccessHub extends AccessDevice {
       this.hap.Characteristic.ContactSensorState.CONTACT_NOT_DETECTED;
   }
 
+  private getDryContactDefinition(sensorType: DryContactSensorType): DryContactSensorDefinition {
+
+    return DRY_CONTACT_SENSOR_DEFINITIONS[sensorType];
+  }
+
+  private getDryContactDisplayName(sensorType: DryContactSensorType): string {
+
+    return this.accessoryName + this.getDryContactDefinition(sensorType).displayNameSuffix;
+  }
+
+  private getDryContactHint(sensorType: DryContactSensorType, hintType: "has" | "log"): boolean {
+
+    switch(sensorType) {
+
+      case "rel":
+
+        return hintType === "has" ? this.hints.hasRel : this.hints.logRel;
+
+      case "ren":
+
+        return hintType === "has" ? this.hints.hasRen : this.hints.logRen;
+
+      case "rex":
+
+        return hintType === "has" ? this.hints.hasRex : this.hints.logRex;
+
+      default:
+
+        return false;
+    }
+  }
+
+  private getDryContactState(sensorType: DryContactSensorType): CharacteristicValue {
+
+    if(!this.isDryContactWired(sensorType)) {
+
+      return this.hap.Characteristic.ContactSensorState.CONTACT_DETECTED;
+    }
+
+    const key = this.getDryContactStateKey(sensorType);
+
+    if(!key) {
+
+      return this.hap.Characteristic.ContactSensorState.CONTACT_NOT_DETECTED;
+    }
+
+    const value = this.uda.configs?.find(x => x.key === key)?.value;
+    const normalizedValue = typeof value === "string" ? value.toLowerCase() : "";
+
+    switch(normalizedValue) {
+
+      case "1":
+      case "active":
+      case "closed":
+      case "on":
+      case "true":
+
+        return this.hap.Characteristic.ContactSensorState.CONTACT_DETECTED;
+
+      case "0":
+      case "inactive":
+      case "open":
+      case "off":
+      case "false":
+
+        return this.hap.Characteristic.ContactSensorState.CONTACT_NOT_DETECTED;
+
+      default:
+
+        return this.hap.Characteristic.ContactSensorState.CONTACT_NOT_DETECTED;
+    }
+  }
+
+  private getDryContactStateKey(sensorType: DryContactSensorType): string | null {
+
+    const definition = this.getDryContactDefinition(sensorType);
+
+    if(this.isMiniVariant && definition.stateKeys.mini) {
+
+      return definition.stateKeys.mini;
+    }
+
+    return definition.stateKeys.default ?? null;
+  }
+
+  private getDryContactWiringKeys(sensorType: DryContactSensorType): string[] {
+
+    const definition = this.getDryContactDefinition(sensorType);
+
+    if(this.isMiniVariant && definition.wiringKeys.mini) {
+
+      return definition.wiringKeys.mini;
+    }
+
+    return definition.wiringKeys.default ?? [];
+  }
+
+  private isDryContactWired(sensorType: DryContactSensorType): boolean {
+
+    if(this.isMiniVariant && (sensorType === "rel")) {
+
+      return true;
+    }
+
+    const wiringKeys = this.getDryContactWiringKeys(sensorType);
+
+    if(!wiringKeys.length) {
+
+      return false;
+    }
+
+    return wiringKeys.filter(wire => this.uda.configs?.some(x => x.key === wire && x.value === "on")).length === wiringKeys.length;
+  }
+
+  private hasDryContactSensor(sensorType: DryContactSensorType): boolean {
+
+    if(!this.hasFeature(this.featurePrefix + "." + sensorType.toUpperCase())) {
+
+      return false;
+    }
+
+    return this.hasDryContactHardware(sensorType);
+  }
+
+  private hasDryContactHardware(sensorType: DryContactSensorType): boolean {
+
+    const key = this.getDryContactStateKey(sensorType);
+
+    return key ? (this.uda.configs?.some(config => config.key === key) ?? false) : false;
+  }
+
+  private handleDryContactStateChange(sensorType: DryContactSensorType, newState: CharacteristicValue): void {
+
+    if(!this.getDryContactHint(sensorType, "has")) {
+
+      return;
+    }
+
+    if(this.dryContactStates[sensorType] === newState) {
+
+      return;
+    }
+
+    this.dryContactStates[sensorType] = newState;
+
+    const service = this.accessory.getServiceById(this.hap.Service.ContactSensor,
+      this.getDryContactDefinition(sensorType).reservedName);
+
+    service?.updateCharacteristic(this.hap.Characteristic.ContactSensorState, newState);
+    service?.updateCharacteristic(this.hap.Characteristic.StatusActive, this.isOnline && this.isDryContactWired(sensorType));
+
+    this.publishDryContactState(sensorType, newState);
+  }
+
+  private publishDryContactState(sensorType: DryContactSensorType, newState: CharacteristicValue): void {
+
+    if(!this.isDryContactWired(sensorType)) {
+
+      return;
+    }
+
+    const payload = (newState === this.hap.Characteristic.ContactSensorState.CONTACT_DETECTED) ? "false" : "true";
+
+    this.controller.mqtt?.publish(this.id, sensorType, payload);
+
+    if(this.getDryContactHint(sensorType, "log")) {
+
+      const definition = this.getDryContactDefinition(sensorType);
+      const stateLabel = newState === this.hap.Characteristic.ContactSensorState.CONTACT_DETECTED ? "closed" : "open";
+
+      this.log.info("%s %s.", definition.logLabel, stateLabel);
+    }
+  }
+
   // Return the current state of the relay lock on the hub.
   private get hubLockState(): CharacteristicValue {
 
@@ -889,6 +1196,13 @@ export class AccessHub extends AccessDevice {
 
     // The DPS is considered wired only if all associated wiring is connected.
     return wiringType.filter(wire => this.uda.configs?.some(x => x.key === wire && x.value === "on")).length === wiringType.length;
+  }
+
+  private get isMiniVariant(): boolean {
+
+    const deviceType = this.uda.device_type ?? "";
+
+    return deviceType === "UA-Hub-Door-Mini" || deviceType === "UA-ULTRA";
   }
 
   // Utility to validate hub capabilities.
@@ -1041,6 +1355,16 @@ export class AccessHub extends AccessDevice {
                 (this.hkDpsState === this.hap.Characteristic.ContactSensorState.CONTACT_DETECTED) ? "closed" : "open");
             }
           }
+        }
+
+        for(const sensorType of DRY_CONTACT_SENSOR_TYPES) {
+
+          if(!this.getDryContactHint(sensorType, "has")) {
+
+            continue;
+          }
+
+          this.handleDryContactStateChange(sensorType, this.getDryContactState(sensorType));
         }
 
         break;
