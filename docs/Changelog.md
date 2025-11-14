@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file. This projec
   * Retain all fork-specific adjustments introduced in 1.9.3 so they continue to be available on top of the upstream baseline.
   * Document the combined release so it is easy to distinguish from both upstream 1.10.0 and the prior fork-only 1.9.3 build.
   * Enable the lock delay interval feature option by default on hubs and Gate Hub devices, matching the upstream 1.10.0 behavior change.
+  * Update the configuration UI so Gate Hub and G3 Reader devices expose the new 1.10.0 feature options, matching upstream functionality.
 
 ## 1.10.0 (2025-11-10)
   * New feature: UniFi Access Gate Hub support. Thank you to @tdabasinskas for the plumbing tidbits - I appreciate your contribution to the community!
