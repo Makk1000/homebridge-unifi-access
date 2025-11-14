@@ -84,6 +84,9 @@ These option(s) apply to: UniFi Access Gate Hub devices.
 | `Gate.Doorbell`                                   | Add a doorbell accessory to handle gate call button events in HomeKit. **(default: enabled)**. <BR>*Supported on UniFi Access Gate Hubs that provide a call button.*
 | `Gate.Doorbell.Trigger`                           | Add a switch accessory for automation scenarios to reflect (but not trigger) gate call button events. **(default: disabled)**. <BR>*Supported on UniFi Access Gate Hubs that provide a call button.*
 | `Gate.DPS`                                        | Add a contact sensor accessory for the gate position sensor. **(default: enabled)**. <BR>*Supported on UniFi Access Gate Hubs that have a position sensor.*
+| `Gate.REL`                                        | Expose the REL dry contact input as a contact sensor accessory. **(default: enabled)**.
+| `Gate.REN`                                        | Expose the REN dry contact input as a contact sensor accessory. **(default: enabled)**.
+| `Gate.REX`                                        | Expose the REX dry contact input as a contact sensor accessory. **(default: enabled)**.
 
 #### <A NAME="hub"></A>Hub feature options.
 
@@ -96,6 +99,9 @@ These option(s) apply to: all Access device types.
 | `Hub.Doorbell`                                   | Add a doorbell accessory to handle doorbell ring events in HomeKit. **(default: enabled)**. <BR>*Supported on UniFi Access hubs that have a doorbell.*
 | `Hub.Doorbell.Trigger`                           | Add a switch accessory for automation scenarios to reflect (but not trigger) doorbell ring events on an Access doorbell. **(default: disabled)**. <BR>*Supported on UniFi Access hubs that have a doorbell.*
 | `Hub.DPS`                                        | Add a contact sensor accessory for the door position sensor. **(default: enabled)**. <BR>*Supported on UniFi Access hubs that have a door position sensor.*
+| `Hub.REL`                                        | Expose the REL dry contact input as a contact sensor accessory. **(default: enabled)**.
+| `Hub.REN`                                        | Expose the REN dry contact input as a contact sensor accessory. **(default: enabled)**.
+| `Hub.REX`                                        | Expose the REX dry contact input as a contact sensor accessory. **(default: enabled)**.
 
 #### <A NAME="intercom"></A>Intercom feature options.
 
@@ -114,5 +120,8 @@ These option(s) apply to: all Access device types.
 |--------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 | `Log.Doorbell`                                   | Log doorbell ring events in Homebridge. **(default: enabled)**. <BR>*Supported on UniFi Access hubs that have a doorbell.*
 | `Log.DPS`                                        | Log door position sensor events in Homebridge. **(default: enabled)**. <BR>*Supported on UniFi Access hubs that have a door position sensor.*
+| `Log.REL`                                        | Log REL dry contact sensor events in Homebridge. **(default: enabled)**.
+| `Log.REN`                                        | Log REN dry contact sensor events in Homebridge. **(default: enabled)**.
+| `Log.REX`                                        | Log REX dry contact sensor events in Homebridge. **(default: enabled)**.
 | `Log.Lock`                                       | Log lock events in Homebridge. **(default: enabled)**. <BR>*Supported on UniFi Access hubs.*
 
