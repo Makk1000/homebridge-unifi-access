@@ -2,8 +2,8 @@
  *
  * access-hub.ts: Hub device class for UniFi Access.
  */
-import type { AccessDeviceConfig, AccessEventDoorbellCancel, AccessEventDoorbellRing, AccessEventPacket } from "unifi-access";
-import type { CharacteristicValue, PlatformAccessory } from "homebridge";
+import type { AccessDeviceConfig, AccessDeviceConfigPayload, AccessEventDoorbellCancel, AccessEventDoorbellRing, AccessEventPacket } from "unifi-access";
+import type { CharacteristicValue, PlatformAccessory, Service } from "homebridge";
 import { acquireService, validService } from "homebridge-plugin-utils";
 import type { AccessController } from "./access-controller.js";
 import { AccessDevice } from "./access-device.js";
@@ -27,6 +27,77 @@ interface DryContactSensorDefinition {
   stateKeys: { default: string, mini?: string },
   wiringKeys: { default: string[], mini?: string[] }
 }
+
+type AccessMethodType = "face" | "hand" | "mobile" | "nfc" | "pin" | "qr";
+
+interface AccessMethodSwitchDefinition {
+
+  configKey: string,
+  extensionKey: string,
+  methodType: AccessMethodType,
+  state: boolean
+}
+
+type AccessDeviceExtension = NonNullable<AccessDeviceConfig["extensions"]>[number];
+
+const ACCESS_METHOD_METADATA: Record<AccessMethodType, {
+
+  displayNameSuffix: string,
+  keywords: string[],
+  logLabel: string,
+  reservedName: AccessReservedNames
+}> = {
+
+  face: {
+
+    displayNameSuffix: " Face Access",
+    keywords: [ "face" ],
+    logLabel: "Face access method",
+    reservedName: AccessReservedNames.SWITCH_METHOD_FACE
+  },
+
+  hand: {
+
+    displayNameSuffix: " Hand-Wave Access",
+    keywords: [ "hand", "wave" ],
+    logLabel: "Hand-wave access method",
+    reservedName: AccessReservedNames.SWITCH_METHOD_HAND
+  },
+
+  mobile: {
+
+    displayNameSuffix: " Mobile Access",
+    keywords: [ "mobile" ],
+    logLabel: "Mobile access method",
+    reservedName: AccessReservedNames.SWITCH_METHOD_MOBILE
+  },
+
+  nfc: {
+
+    displayNameSuffix: " NFC Access",
+    keywords: [ "nfc" ],
+    logLabel: "NFC access method",
+    reservedName: AccessReservedNames.SWITCH_METHOD_NFC
+  },
+
+  pin: {
+
+    displayNameSuffix: " PIN Access",
+    keywords: [ "pin" ],
+    logLabel: "PIN access method",
+    reservedName: AccessReservedNames.SWITCH_METHOD_PIN
+  },
+
+  qr: {
+
+    displayNameSuffix: " QR Access",
+    keywords: [ "qr" ],
+    logLabel: "QR access method",
+    reservedName: AccessReservedNames.SWITCH_METHOD_QR
+  }
+};
+
+const ACCESS_METHOD_TYPES = Object.keys(ACCESS_METHOD_METADATA) as AccessMethodType[];
 
 const DRY_CONTACT_SENSOR_TYPES: DryContactSensorType[] = [ "rel", "ren", "rex" ];
 
@@ -71,6 +142,8 @@ export class AccessHub extends AccessDevice {
   private lockResetTimer: NodeJS.Timeout | null;
   private g3ReaderLockStateOverride: CharacteristicValue | null;
   private readonly deviceClass: string;
+  private readonly accessMethodConfigs: Map<AccessMethodType, AccessMethodSwitchDefinition>;
+  private readonly accessMethodStates: Map<AccessMethodType, boolean>;
   private readonly dryContactStates: Partial<Record<DryContactSensorType, CharacteristicValue>>;
   public uda: AccessDeviceConfig;
 
@@ -86,6 +159,8 @@ export class AccessHub extends AccessDevice {
     this.lockResetTimer = null;
     this.doorbellRingRequestId = null;
     this.g3ReaderLockStateOverride = null;
+    this.accessMethodConfigs = new Map();
+    this.accessMethodStates = new Map();
     this.dryContactStates = {};
 
     // If we attempt to set the delay interval to something invalid, then assume we are using the default unlock behavior.
@@ -111,6 +186,11 @@ export class AccessHub extends AccessDevice {
   private get isG3Reader(): boolean {
 
     return isG3ReaderDeviceClass(this.deviceClass);
+  }
+
+  private get supportsAccessMethods(): boolean {
+
+    return (this.uda.extensions?.length ?? 0) > 0;
   }
 
   protected get positionSensorDisplayName(): string {
@@ -193,6 +273,7 @@ export class AccessHub extends AccessDevice {
     // Configure the doorbell.
     this.configureDoorbell();
     this.configureDoorbellTrigger();
+    this.configureAccessMethodSwitches();
 
     if(this.isG3Reader) {
 
@@ -352,6 +433,276 @@ export class AccessHub extends AccessDevice {
           return "unknown";
       }
     });
+  }
+
+  private configureAccessMethodSwitches(): void {
+
+    if(!this.supportsAccessMethods) {
+
+      return;
+    }
+
+    for(const definition of this.discoverAccessMethodDefinitions()) {
+
+      this.accessMethodConfigs.set(definition.methodType, definition);
+      this.configureAccessMethodSwitch(definition);
+    }
+  }
+
+  private configureAccessMethodSwitch(definition: AccessMethodSwitchDefinition): void {
+
+    const reservedName = this.getAccessMethodReservedName(definition.methodType);
+    const displayName = this.getAccessMethodDisplayName(definition.methodType);
+    const service = acquireService(this.hap, this.accessory, this.hap.Service.Switch, displayName,
+      reservedName, () => this.log.info("Enabling the %s.", this.getAccessMethodLogLabel(definition.methodType).toLowerCase()));
+
+    if(!service) {
+
+      this.log.error("Unable to add the %s.", this.getAccessMethodLogLabel(definition.methodType).toLowerCase());
+
+      return;
+    }
+
+    service.getCharacteristic(this.hap.Characteristic.On)?.onGet(() => this.accessMethodStates.get(definition.methodType) ??
+      definition.state);
+
+    service.getCharacteristic(this.hap.Characteristic.On)?.onSet(async (value: CharacteristicValue) => {
+
+      const targetState = value === true;
+      const currentState = this.accessMethodStates.get(definition.methodType) ?? definition.state;
+
+      if(targetState === currentState) {
+
+        setTimeout(() => service.updateCharacteristic(this.hap.Characteristic.On, currentState), 50);
+
+        return;
+      }
+
+      if(!(await this.updateAccessMethodConfig(definition.methodType, targetState))) {
+
+        setTimeout(() => service.updateCharacteristic(this.hap.Characteristic.On,
+          this.accessMethodStates.get(definition.methodType) ?? currentState), 50);
+
+        return;
+      }
+
+      this.logAccessMethodState(definition.methodType, targetState);
+    });
+
+    service.updateCharacteristic(this.hap.Characteristic.ConfiguredName, displayName);
+    service.updateCharacteristic(this.hap.Characteristic.On, definition.state);
+
+    this.accessMethodStates.set(definition.methodType, definition.state);
+  }
+
+  private refreshAccessMethodSwitches(): void {
+
+    if(!this.supportsAccessMethods) {
+
+      if(this.accessMethodStates.size) {
+
+        for(const methodType of Array.from(this.accessMethodStates.keys())) {
+
+          this.accessMethodStates.delete(methodType);
+          this.accessMethodConfigs.delete(methodType);
+          this.getAccessMethodService(methodType)?.updateCharacteristic(this.hap.Characteristic.On, false);
+        }
+      }
+
+      return;
+    }
+
+    const definitions = this.discoverAccessMethodDefinitions();
+    const activeMethods = new Set<AccessMethodType>();
+
+    for(const definition of definitions) {
+
+      activeMethods.add(definition.methodType);
+      const previousState = this.accessMethodStates.get(definition.methodType);
+
+      this.accessMethodConfigs.set(definition.methodType, definition);
+
+      const service = this.getAccessMethodService(definition.methodType);
+
+      if(!service) {
+
+        this.configureAccessMethodSwitch(definition);
+
+        continue;
+      }
+
+      if(previousState === definition.state) {
+
+        continue;
+      }
+
+      this.accessMethodStates.set(definition.methodType, definition.state);
+      service.updateCharacteristic(this.hap.Characteristic.On, definition.state);
+      this.logAccessMethodState(definition.methodType, definition.state);
+    }
+
+    for(const methodType of Array.from(this.accessMethodStates.keys())) {
+
+      if(activeMethods.has(methodType)) {
+
+        continue;
+      }
+
+      this.accessMethodStates.delete(methodType);
+      this.accessMethodConfigs.delete(methodType);
+      this.getAccessMethodService(methodType)?.updateCharacteristic(this.hap.Characteristic.On, false);
+    }
+  }
+
+  private discoverAccessMethodDefinitions(): AccessMethodSwitchDefinition[] {
+
+    const extensions = this.uda.extensions;
+
+    if(!extensions?.length) {
+
+      return [];
+    }
+
+    const seen = new Set<AccessMethodType>();
+    const definitions: AccessMethodSwitchDefinition[] = [];
+
+    for(const extension of extensions) {
+
+      const methodType = this.getAccessMethodTypeFromExtension(extension);
+
+      if(!methodType || seen.has(methodType)) {
+
+        continue;
+      }
+
+      const configEntry = extension.target_config?.find(config => typeof config.config_value === "boolean");
+
+      if(typeof configEntry?.config_value !== "boolean") {
+
+        continue;
+      }
+
+      const extensionKey = this.buildAccessMethodExtensionKey(extension, methodType);
+
+      definitions.push({
+
+        configKey: configEntry.config_key,
+        extensionKey,
+        methodType,
+        state: configEntry.config_value
+      });
+
+      seen.add(methodType);
+    }
+
+    return definitions;
+  }
+
+  private getAccessMethodTypeFromExtension(extension: AccessDeviceExtension): AccessMethodType | null {
+
+    const values = [ extension.extension_name, extension.target_name, extension.target_type, extension.target_value,
+      extension.source_id ]
+      .map(value => typeof value === "string" ? value.toLowerCase() : "");
+
+    for(const methodType of ACCESS_METHOD_TYPES) {
+
+      const keywords = ACCESS_METHOD_METADATA[methodType].keywords;
+
+      if(keywords.some(keyword => values.some(value => value.includes(keyword)))) {
+
+        return methodType;
+      }
+    }
+
+    return null;
+  }
+
+  private buildAccessMethodExtensionKey(extension: AccessDeviceExtension, fallback: string): string {
+
+    return extension.unique_id ?? extension.device_id ?? extension.target_name ?? extension.extension_name ?? extension.source_id ?? fallback;
+  }
+
+  private getAccessMethodDisplayName(methodType: AccessMethodType): string {
+
+    return this.accessoryName + ACCESS_METHOD_METADATA[methodType].displayNameSuffix;
+  }
+
+  private getAccessMethodLogLabel(methodType: AccessMethodType): string {
+
+    return ACCESS_METHOD_METADATA[methodType].logLabel;
+  }
+
+  private getAccessMethodReservedName(methodType: AccessMethodType): AccessReservedNames {
+
+    return ACCESS_METHOD_METADATA[methodType].reservedName;
+  }
+
+  private getAccessMethodService(methodType: AccessMethodType): Service | undefined {
+
+    return this.accessory.getServiceById(this.hap.Service.Switch, this.getAccessMethodReservedName(methodType));
+  }
+
+  private async updateAccessMethodConfig(methodType: AccessMethodType, targetState: boolean): Promise<boolean> {
+
+    const definition = this.accessMethodConfigs.get(methodType);
+    const extensions = this.uda.extensions;
+
+    if(!definition || !extensions?.length) {
+
+      return false;
+    }
+
+    const updatedExtensions = extensions.map(extension => {
+
+      if(!this.isMatchingAccessMethodExtension(extension, definition)) {
+
+        return extension;
+      }
+
+      return {
+
+        ...extension,
+        // eslint-disable-next-line camelcase
+        target_config: extension.target_config?.map(config => {
+
+          if(config.config_key !== definition.configKey) {
+
+            return config;
+          }
+
+          // eslint-disable-next-line camelcase
+          return { ...config, config_value: targetState };
+        })
+      };
+    });
+
+    const payload: AccessDeviceConfigPayload = {
+
+      extensions: updatedExtensions
+    };
+
+    const updatedDevice = await this.controller.udaApi.updateDevice(this.uda, payload);
+
+    if(!updatedDevice) {
+
+      return false;
+    }
+
+    this.uda = updatedDevice;
+    this.accessMethodConfigs.set(methodType, { ...definition, state: targetState });
+    this.accessMethodStates.set(methodType, targetState);
+
+    return true;
+  }
+
+  private isMatchingAccessMethodExtension(extension: AccessDeviceExtension, definition: AccessMethodSwitchDefinition): boolean {
+
+    return this.buildAccessMethodExtensionKey(extension, definition.methodType) === definition.extensionKey;
+  }
+
+  private logAccessMethodState(methodType: AccessMethodType, isEnabled: boolean): void {
+
+    this.log.info("%s %s.", this.getAccessMethodLogLabel(methodType), isEnabled ? "enabled" : "disabled");
   }
 
   // Configure the lock for HomeKit.
@@ -1366,6 +1717,8 @@ export class AccessHub extends AccessDevice {
 
           this.handleDryContactStateChange(sensorType, this.getDryContactState(sensorType));
         }
+
+        this.refreshAccessMethodSwitches();
 
         break;
       }
