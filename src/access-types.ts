@@ -8,6 +8,9 @@ export enum AccessReservedNames {
 
   // Manage our contact sensor types.
   CONTACT_DPS = "ContactSensor.DPS",
+  CONTACT_REL = "ContactSensor.REL",
+  CONTACT_REN = "ContactSensor.REN",
+  CONTACT_REX = "ContactSensor.REX",
 
   // Manage our switch types.
   SWITCH_DOORBELL_TRIGGER = "DoorbellTrigger",
