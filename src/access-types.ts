@@ -16,7 +16,13 @@ export enum AccessReservedNames {
   SWITCH_DOORBELL_TRIGGER = "DoorbellTrigger",
   SWITCH_LOCK_TRIGGER = "LockTrigger",
   SWITCH_MOTION_SENSOR = "MotionSensorSwitch",
-  SWITCH_MOTION_TRIGGER = "MotionSensorTrigger"
+  SWITCH_MOTION_TRIGGER = "MotionSensorTrigger",
+  SWITCH_METHOD_FACE = "AccessMethod.Face",
+  SWITCH_METHOD_HAND = "AccessMethod.Hand",
+  SWITCH_METHOD_MOBILE = "AccessMethod.Mobile",
+  SWITCH_METHOD_NFC = "AccessMethod.NFC",
+  SWITCH_METHOD_PIN = "AccessMethod.PIN",
+  SWITCH_METHOD_QR = "AccessMethod.QR"
 }
 
 // Known UniFi Access device class representations for G3 Reader models. Some
