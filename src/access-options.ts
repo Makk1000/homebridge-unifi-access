@@ -65,7 +65,7 @@ export const featureOptions: { [index: string]: AccessFeatureOption[] } = {
   // Gate options.
   "Gate": [
 
-    { default: false, defaultValue: ACCESS_DEVICE_UNLOCK_INTERVAL, description: "Delay, in minutes, before locking the gate lock relay, once it's been unlocked by HomeKit. If set to 0, it will remain unlocked indefinitely. By default, the gate lock relay will lock five seconds after unlocking.", name: "LockDelayInterval" },
+    { default: true, defaultValue: ACCESS_DEVICE_UNLOCK_INTERVAL, description: "Delay, in minutes, before locking the gate lock relay, once it's been unlocked by HomeKit. If set to 0, it will remain unlocked indefinitely. By default, the gate lock relay will lock five seconds after unlocking.", name: "LockDelayInterval" },
     { default: false, description: "Add a switch accessory to control the gate lock. This can be useful in automation scenarios where you want to work around HomeKit's security restrictions for controlling locks and triggering events when a lock or unlock event occurs.", name: "Lock.Trigger" },
     { default: true, description: "Add a doorbell accessory to handle gate call button events in HomeKit.", hasCapability: [ "door_bell" ], name: "Doorbell" },
     { default: false, description: "Add a switch accessory for automation scenarios to reflect (but not trigger) gate call button events.", hasCapability: [ "door_bell" ], name: "Doorbell.Trigger" },
@@ -78,7 +78,7 @@ export const featureOptions: { [index: string]: AccessFeatureOption[] } = {
   // Hub options.
   "Hub": [
 
-    { default: false, defaultValue: ACCESS_DEVICE_UNLOCK_INTERVAL, description: "Delay, in minutes, before locking the door lock relay, once it's been unlocked by HomeKit. If set to 0, it will remain unlocked indefinitely. By default, the door lock relay will lock five seconds after unlocking.", name: "LockDelayInterval" },
+    { default: true, defaultValue: ACCESS_DEVICE_UNLOCK_INTERVAL, description: "Delay, in minutes, before locking the door lock relay, once it's been unlocked by HomeKit. If set to 0, it will remain unlocked indefinitely. By default, the door lock relay will lock five seconds after unlocking.", name: "LockDelayInterval" },
     { default: false, description: "Add a switch accessory to control the lock. This can be useful in automation scenarios where you want to work around HomeKit's security restrictions for controlling locks and triggering events when a lock or unlock event occurs.", name: "Lock.Trigger" },
     { default: true, description: "Add a doorbell accessory to handle doorbell ring events in HomeKit.", hasCapability: [ "door_bell" ], name: "Doorbell" },
     { default: false, description: "Add a switch accessory for automation scenarios to reflect (but not trigger) doorbell ring events on an Access doorbell.", hasCapability: [ "door_bell" ], name: "Doorbell.Trigger" },
