@@ -57,6 +57,9 @@ The topics and messages that `homebridge-unifi-access` publishes are:
 | `doorbell`            | `true` or `false` when a UniFi Access hub is ringing the doorbell.
 | `dps`                 | `true` or `false` when a UniFi Access hub has opened or closed the door position sensor. If the DPS wiring is not connected to the hub, will return `unknown`.
 | `lock`                | `true` or `false` when a UniFi Access hub has locked or unlocked the door lock relay.
+| `rel`                 | `true` or `false` when the REL dry contact sensor reports open or closed.
+| `ren`                 | `true` or `false` when the REN dry contact sensor reports open or closed.
+| `rex`                 | `true` or `false` when the REX dry contact sensor reports open or closed.
 
 Messages are published to MQTT when an action occurs on an Access device that triggers the respective event, or when an MQTT message is received for one of the topics `homebridge-unifi-access` subscribes to.
 
@@ -69,6 +72,9 @@ The topics that `homebridge-unifi-access` subscribes to are:
 | `dps/get`               | `true` will trigger a publish event of the current door position sensor state for a UniFi Access hub.
 | `lock/get`              | `true` will trigger a publish event of the current door lock relay state for a UniFi Access hub.
 | `lock/set`              | `true` will unlock the door lock relay for a UniFi Access hub. `false` will unlock.
+| `rel/get`               | `true` will trigger a publish event of the current REL dry contact sensor state.
+| `ren/get`               | `true` will trigger a publish event of the current REN dry contact sensor state.
+| `rex/get`               | `true` will trigger a publish event of the current REX dry contact sensor state.
 
 ### Some Fun Facts
   * MQTT support is disabled by default. It's enabled when an MQTT broker is specified in the configuration.
