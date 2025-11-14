@@ -15,9 +15,15 @@ import util from "node:util";
 export interface AccessHints {
 
   hasDps: boolean,
+  hasRel: boolean,
+  hasRen: boolean,
+  hasRex: boolean,
   ledStatus: boolean,
   logDoorbell: boolean,
   logDps: boolean,
+  logRel: boolean,
+  logRen: boolean,
+  logRex: boolean,
   logLock: boolean,
   logMotion: boolean,
   motionDuration: number,
