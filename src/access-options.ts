@@ -69,7 +69,10 @@ export const featureOptions: { [index: string]: AccessFeatureOption[] } = {
     { default: false, description: "Add a switch accessory to control the gate lock. This can be useful in automation scenarios where you want to work around HomeKit's security restrictions for controlling locks and triggering events when a lock or unlock event occurs.", name: "Lock.Trigger" },
     { default: true, description: "Add a doorbell accessory to handle gate call button events in HomeKit.", hasCapability: [ "door_bell" ], name: "Doorbell" },
     { default: false, description: "Add a switch accessory for automation scenarios to reflect (but not trigger) gate call button events.", hasCapability: [ "door_bell" ], name: "Doorbell.Trigger" },
-    { default: true, description: "Add a contact sensor accessory for the gate position sensor.", hasCapability: [ "dps_alarm", "dps_mode_selectable", "dps_trigger_level" ], name: "DPS" }
+    { default: true, description: "Add a contact sensor accessory for the gate position sensor.", hasCapability: [ "dps_alarm", "dps_mode_selectable", "dps_trigger_level" ], name: "DPS" },
+    { default: true, description: "Expose the REL dry contact input as a contact sensor accessory.", name: "REL" },
+    { default: true, description: "Expose the REN dry contact input as a contact sensor accessory.", name: "REN" },
+    { default: true, description: "Expose the REX dry contact input as a contact sensor accessory.", name: "REX" }
   ],
 
   // Hub options.
@@ -79,7 +82,10 @@ export const featureOptions: { [index: string]: AccessFeatureOption[] } = {
     { default: false, description: "Add a switch accessory to control the lock. This can be useful in automation scenarios where you want to work around HomeKit's security restrictions for controlling locks and triggering events when a lock or unlock event occurs.", name: "Lock.Trigger" },
     { default: true, description: "Add a doorbell accessory to handle doorbell ring events in HomeKit.", hasCapability: [ "door_bell" ], name: "Doorbell" },
     { default: false, description: "Add a switch accessory for automation scenarios to reflect (but not trigger) doorbell ring events on an Access doorbell.", hasCapability: [ "door_bell" ], name: "Doorbell.Trigger" },
-    { default: true, description: "Add a contact sensor accessory for the door position sensor.", hasCapability: [ "dps_alarm", "dps_mode_selectable", "dps_trigger_level" ], name: "DPS" }
+    { default: true, description: "Add a contact sensor accessory for the door position sensor.", hasCapability: [ "dps_alarm", "dps_mode_selectable", "dps_trigger_level" ], name: "DPS" },
+    { default: true, description: "Expose the REL dry contact input as a contact sensor accessory.", name: "REL" },
+    { default: true, description: "Expose the REN dry contact input as a contact sensor accessory.", name: "REN" },
+    { default: true, description: "Expose the REX dry contact input as a contact sensor accessory.", name: "REX" }
   ],
 
   // Intercom options.
@@ -94,6 +100,9 @@ export const featureOptions: { [index: string]: AccessFeatureOption[] } = {
 
     { default: true, description: "Log doorbell ring events in Homebridge.", hasCapability: [ "door_bell" ], name: "Doorbell" },
     { default: true, description: "Log door position sensor events in Homebridge.", hasCapability: [ "dps_alarm", "dps_mode_selectable", "dps_trigger_level" ], name: "DPS" },
+    { default: true, description: "Log REL dry contact sensor events in Homebridge.", name: "REL" },
+    { default: true, description: "Log REN dry contact sensor events in Homebridge.", name: "REN" },
+    { default: true, description: "Log REX dry contact sensor events in Homebridge.", name: "REX" },
     { default: true, description: "Log lock events in Homebridge.", hasCapability: [ "is_hub" ], name: "Lock" }
   ]
 };
